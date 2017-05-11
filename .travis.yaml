@@ -66,10 +66,6 @@ before_script:
 script:
     - pwd
     - ls
-    - chmod +x copylicense.sh
-    - ./copylicense.sh
-    - echo yes | sdkmanager "extras;m2repository;com;android;support;constraint;constraint-layout;1.0.2"
-    - echo yes | sdkmanager "extras;m2repository;com;android;support;constraint;constraint-layout-solver;1.0.2"
     - echo "Travis branch is $TRAVIS_BRANCH"
     - echo "Travis branch is in pull request $TRAVIS_PULL+REQUEST"
     - android-wait-for-emulator
