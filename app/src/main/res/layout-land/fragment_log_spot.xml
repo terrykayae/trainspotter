@@ -1,0 +1,76 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+
+    tools:context="uk.co.tezk.trainspotter.view.LogSpotFragment">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="@dimen/fragment_margin"
+        >
+
+        <GridLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="12dp"
+            android:id="@+id/gridLayout">
+
+            <TextView
+                android:id="@+id/tvId"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/train_id"
+                android:layout_row="0"
+                android:layout_column="0" />
+
+            <EditText
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="textPersonName"
+                android:text=""
+                android:id="@+id/etTrainId"
+                android:layout_row="0"
+                android:layout_column="1"
+                />
+            <TextView
+                android:id="@+id/tvDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/date"
+                android:layout_row="1"
+                android:layout_column="0" />
+
+            <EditText
+                android:id="@+id/etDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="1"
+                android:layout_row="1"
+                android:ems="10"
+                android:inputType="date"
+                android:text="" />
+        </GridLayout>
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/rvSpotImages"
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_alignRight="@+id/gridLayout"
+            android:layout_below="@+id/gridLayout" />
+        <FrameLayout
+            android:id="@+id/mapHolder"
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:layout_toRightOf="@+id/gridLayout"
+            >
+
+        </FrameLayout>
+
+    </RelativeLayout>
+
+</FrameLayout>

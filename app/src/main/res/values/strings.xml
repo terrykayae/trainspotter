@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">TrainSpotter</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="navBarHeader">Train Spotter</string>
+    <string name="navBarSub">tezksoftware\@tezk</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="please_wait_whilst_initialising">Please wait whilst initialising</string>
+    <string name="train_id">Train ID :</string>
+    <string name="date">Date :</string>
+    <string name="number">Number :</string>
+    <string name="name">Name :</string>
+    <string name="livery">Livery :</string>
+    <string name="operator">Operator :</string>
+    <string name="depot">Depot :</string>
+    <string name="class_id">Class :</string>
+</resources>

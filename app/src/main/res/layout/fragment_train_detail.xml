@@ -1,0 +1,131 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="uk.co.tezk.trainspotter.view.TrainDetailFragment">
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        >
+
+        <GridLayout
+            android:id="@+id/gridLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/fragment_margin">
+
+            <TextView
+                android:id="@+id/tvTrainNumber"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="0"
+                android:layout_row="0"
+                android:text="@string/number" />
+
+            <EditText
+                android:id="@+id/etTrainNumber"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="1"
+                android:layout_row="0"
+                android:editable="false"
+                android:ems="10"
+                android:inputType="textPersonName" />
+
+            <TextView
+                android:id="@+id/tvTrainName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="0"
+                android:layout_row="1"
+                android:text="@string/name" />
+
+            <EditText
+                android:id="@+id/etTrainName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="1"
+                android:layout_row="1"
+                android:editable="false"
+                android:ems="10"
+                android:inputType="textPersonName" />
+
+            <TextView
+                android:id="@+id/tvTrainLivery"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="0"
+                android:layout_row="2"
+                android:text="@string/livery" />
+
+            <EditText
+                android:id="@+id/etTrainLivery"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="1"
+                android:layout_row="2"
+                android:editable="false"
+                android:ems="10"
+                android:inputType="textPersonName" />
+
+
+            <TextView
+                android:id="@+id/tvTrainOperator"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="0"
+                android:layout_row="3"
+                android:text="@string/operator" />
+
+            <EditText
+                android:id="@+id/etTrainOperator"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="1"
+                android:layout_row="3"
+                android:editable="false"
+                android:ems="10"
+                android:inputType="textPersonName" />
+
+            <TextView
+                android:id="@+id/tvTrainDepot"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="0"
+                android:layout_row="4"
+                android:text="@string/depot" />
+
+            <EditText
+                android:id="@+id/etTrainDepot"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="1"
+                android:layout_row="4"
+                android:editable="false"
+                android:ems="10"
+                android:inputType="textPersonName" />
+        </GridLayout>
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/trainDetailImageRecyclerView"
+            android:layout_below="@+id/gridLayout"
+            android:layout_width="match_parent"
+            android:layout_marginRight="@dimen/fragment_margin"
+            android:layout_marginLeft="@dimen/fragment_margin"
+            android:layout_marginBottom="@dimen/fragment_margin"
+            android:layout_height="80dp">
+
+        </android.support.v7.widget.RecyclerView>
+        <FrameLayout
+            android:id="@+id/mapHolder"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+
+            android:layout_below="@+id/trainDetailImageRecyclerView">
+
+        </FrameLayout>
+
+    </RelativeLayout>
+
+
+</FrameLayout>
