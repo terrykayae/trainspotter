@@ -72,7 +72,7 @@ script:
     - adb devices   #Display list of devices
     - adb shell input keyevent 82 &
 
-    - ./gradlew connectedCheck coveralls -PdisablePreDex --stacktrace
+    - ./gradlew build connectedCheck -PdisablePreDex --stacktrace
 
 
 before_install:
