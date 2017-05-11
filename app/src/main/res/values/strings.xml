@@ -19,4 +19,5 @@
     <string name="operator">Operator :</string>
     <string name="depot">Depot :</string>
     <string name="class_id">Class :</string>
+    <string name="no_data_error_message">No data returned from the server</string>
 </resources>

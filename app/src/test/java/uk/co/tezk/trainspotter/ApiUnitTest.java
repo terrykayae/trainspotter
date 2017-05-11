@@ -24,7 +24,6 @@ public class ApiUnitTest {
     public void setUp() throws Exception {
         NetworkModule net = new NetworkModule();
         api = new NetworkModule().provideApi(net.provideRetrofit(net.provideOkHttpclient(net.provideInterceptor())));
-
     }
 
     @Test

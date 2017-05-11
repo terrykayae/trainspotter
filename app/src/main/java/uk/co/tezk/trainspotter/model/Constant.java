@@ -42,9 +42,9 @@ public class Constant {
     public static final String API_KEY = "gavffvfavaawjihwj0[";
 
     public static final String CURRENT_ACTION_KEY = "current_action";
-    public static final String TRAIN_SPOTTING_BASE_URL = "http://api.tezk.co.uk:8080/MyTrainApi/Train/";
-    public static final String CLASS_LIST_API = "/classes";
-    public static final String TRAIN_LIST_API = "/class/{classId}";
-    public static final String TRAIN_DETAIL_API = "/engine/{classId}/{trainId}";
-    public static final String TRAIN_SIGHTING_API = "/sighting/{classId}/{trainId}";
+    public static final String TRAIN_SPOTTING_BASE_URL = "http://api.tezk.co.uk:8080/MyTrainApi/train/";
+    public static final String CLASS_LIST_API = "classes";
+    public static final String TRAIN_LIST_API = "class/{classId}";
+    public static final String TRAIN_DETAIL_API = "engine/{classId}/{trainId}";
+    public static final String TRAIN_SIGHTING_API = "sighting/{classId}/{trainId}";
 }

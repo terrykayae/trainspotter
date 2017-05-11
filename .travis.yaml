@@ -1,0 +1,87 @@
+#Continuous Integration (CI) is a development practice that requires developers to integrate code into a shared repository several times a day.
+#Each check-in is then verified by an automated build, allowing teams to detect problems early
+
+#Add above lines at the starting of the file.
+#This basically tells Travis that this repository is an android application source code and it has to use Java 8 for compilation. The notification section will provide email notifications on the email you provided whenever a build gets completed successfully or fails due to some error.
+language: android
+jdk: oraclejdk8
+sudo: false
+
+notifications:
+    email:
+        - terrykay79@gmail.com
+
+#Next, add above lines to your .travis.yml file. The line under the matrix section defines the Android API version and the processor architecture,
+#on which the code will be tested. These lines re-executes the script for each variable. So if I write another line with: “– ANDROID_TARGET=android-16 ANDROID_ABI=armeabi-v7a”, it will execute the whole script with the 21, 19 and 16 APIs. We can say it is really useful to test different API levels.
+# So, each commit you push to the repository will start two separate builds and test prepossess. You can see this in Travis dashboard like below.
+env:
+    matrix:
+        - ANDROID_TARGET=android-19 ANDROID_ABI=armeabi-v7a
+        - ANDROID_TARGET=android-21 ANDROID_ABI=armeabi-v7a
+    global:
+        - ADB_INSTALL_TIMEOUT=10    #Time out to 10 mins
+
+#Travis can cache directories that you need to speed up the subsequent builds by caching the Gradle dependency folders.
+#To enable the caching, you have to specify which directories you want to cache under the cache section.
+#Here, I am caching some of the .gradle folders.
+before_cache:
+    - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
+
+cache:
+  directories:      #Cache all dirs under .gradle folder
+    - $HOME/.gradle/daemon      #Cache daemon logs
+    - $HOME/.gradle/native      #Cache library downloaded from the gradle dependency
+    - $HOME/.gradle/wrapper     #Cache the gradle
+
+android:
+    update_sdk: true
+    components:
+        - platform-tools
+        - tools
+        - build-tools-25.0.3
+        - android-25
+
+        # Additional components
+        - extra-google-google_play_services
+        - extra-google-m2repository
+        - extra-android-m2repository
+
+        #system images
+        - sys-img-armeabi-v7a-android-19
+        - sys-img-armeabi-v7a-android-21
+
+licenses:
+    - 'android-sdk-preview-license-52d11cd2'
+    - 'android-sdk-license-.+'
+    - 'google-gdk-license-.+'
+
+#In every project, we need to run the instrumentation tests. So we will run the emulator using “emulator -avd test -no-skin -no-audio -no-window &”. “ android-wait-for-emulator” script will wait until emulator is up and running. This will print “Waiting for emulator” in Travis log until emulator starts.
+#The next two lines are printing the available devices for our information and sending the key “menu” to the emulator to unlock it.
+before_script:
+    - chmod +x gradlew      #Grand permissions
+    - android list targets
+    - echo no | android create avd --force --name test --target $ANDROID_TARGET --abi $ANDROID_ABI    #Create AVD for given api
+    - emulator -avd test -no-skin -no-audio -no-window &    #Start emulator
+
+script:
+    - pwd
+    - ls
+    - chmod +x copylicense.sh
+    - ./copylicense.sh
+    - echo yes | sdkmanager "extras;m2repository;com;android;support;constraint;constraint-layout;1.0.2"
+    - echo yes | sdkmanager "extras;m2repository;com;android;support;constraint;constraint-layout-solver;1.0.2"
+    - echo "Travis branch is $TRAVIS_BRANCH"
+    - echo "Travis branch is in pull request $TRAVIS_PULL+REQUEST"
+    - android-wait-for-emulator
+    - adb devices   #Display list of devices
+    - adb shell input keyevent 82 &
+
+    - ./gradlew connectedCheck coveralls -PdisablePreDex --stacktrace
+
+
+before_install:
+    - pip install --user codecov    #Install codecov
+
+after_success:
+    - codecov                       #Run codecov
+after_failure: "cat $TRAVIS_BUILD_DIR/app/build/outputs/lint-results-debug.xml"

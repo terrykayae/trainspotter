@@ -1,16 +1,23 @@
 package uk.co.tezk.trainspotter.view;
 
+import android.app.Dialog;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
+
+import java.util.List;
 
 import uk.co.tezk.trainspotter.R;
+import uk.co.tezk.trainspotter.presenter.ClassListPresenterImpl;
+import uk.co.tezk.trainspotter.presenter.IClassListPresenter;
 import uk.co.tezk.trainspotter.view.dummy.DummyContent;
 import uk.co.tezk.trainspotter.view.dummy.DummyContent.DummyItem;
 
@@ -20,13 +27,16 @@ import uk.co.tezk.trainspotter.view.dummy.DummyContent.DummyItem;
  * Activities containing this fragment MUST implement the {@link OnClassListFragmentInteractionListener}
  * interface.
  */
-public class ClassListFragment extends Fragment {
+public class ClassListFragment extends Fragment implements IClassListPresenter.IView {
 
     // TODO: Customize parameter argument names
     private static final String ARG_COLUMN_COUNT = "column-count";
     // TODO: Customize parameters
     private int mColumnCount = 1;
     private OnClassListFragmentInteractionListener mListener;
+
+    private Dialog progressDialog;
+    private IClassListPresenter.IPresenter presenter;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -52,6 +62,12 @@ public class ClassListFragment extends Fragment {
         if (getArguments() != null) {
             mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
         }
+        progressDialog = new Dialog(getActivity());
+        progressDialog.setTitle("Getting data, please wait");
+
+        presenter = ClassListPresenterImpl.getInstance();
+        presenter.bind(this);
+        presenter.retrieveData();
     }
 
     @Override
@@ -89,6 +105,27 @@ public class ClassListFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         mListener = null;
+    }
+
+    @Override
+    public void onStartLoading() {
+        progressDialog.show();
+    }
+
+    @Override
+    public void onErrorLoading(String message) {
+        progressDialog.dismiss();
+        Toast.makeText(getActivity(), "Error loading data", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onCompletedLoading() {
+        progressDialog.dismiss();
+    }
+
+    @Override
+    public void showClassList(List<String> classList) {
+        Log.i("CLF","list contains "+classList.size());
     }
 
     /**
