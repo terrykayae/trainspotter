@@ -31,6 +31,8 @@ public class ClassListPresenterTest {
     IClassListPresenter.IView view;
     @Mock
     ITrainSpotterInteractor interactor;
+    @Mock
+    ITrainSpotterInteractor cachedInteractor;
     // Test data
     List <String> classList;
     ClassNumbers classNumbers;
@@ -39,7 +41,7 @@ public class ClassListPresenterTest {
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
 
-        presenter = new ClassListPresenterImpl(interactor, Schedulers.immediate(), Schedulers.immediate());
+        presenter = new ClassListPresenterImpl(interactor, Schedulers.immediate(), Schedulers.immediate(), cachedInteractor);
         classList = new ArrayList();
         classNumbers = new ClassNumbers();
         classList.add("1");
@@ -51,6 +53,7 @@ public class ClassListPresenterTest {
 
     @Test
     public void testBindingAndErrorPassingWorks() {
+        when(cachedInteractor.getClassNumbers()).thenReturn(Observable.<ClassNumbers>error(new Exception("No data returned from the server")));
         when(interactor.getClassNumbers()).thenReturn(Observable.<ClassNumbers>error(new Exception("No data returned from the server")));
         presenter.bind(view);
 
@@ -61,7 +64,8 @@ public class ClassListPresenterTest {
     }
     
     @Test
-    public void testBindingAndGetDataWorks() {
+    public void testBindingAndGetDataNoCacheWorks() {
+        when(cachedInteractor.getClassNumbers()).thenReturn(Observable.<ClassNumbers>empty());
         when(interactor.getClassNumbers()).thenReturn(Observable.just(classNumbers));
         presenter.bind(view);
 
@@ -70,6 +74,16 @@ public class ClassListPresenterTest {
         verify(view, times(1)).showClassList(classList);
         verify(view, times(1)).onCompletedLoading();
     }
-    
-    
+
+    @Test
+    public void testBindingAndGetDataWithCacheWorks() {
+        when(cachedInteractor.getClassNumbers()).thenReturn(Observable.just(classNumbers));
+        when(interactor.getClassNumbers()).thenReturn(Observable.<ClassNumbers>empty());
+        presenter.bind(view);
+
+        presenter.retrieveData();
+
+        verify(view, times(1)).showClassList(classList);
+        verify(view, times(1)).onCompletedLoading();
+    }
 }

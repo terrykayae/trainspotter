@@ -8,9 +8,11 @@ import uk.co.tezk.trainspotter.model.SightingDetails;
 import uk.co.tezk.trainspotter.model.TrainDetail;
 import uk.co.tezk.trainspotter.model.TrainListItem;
 import uk.co.tezk.trainspotter.network.ITrainSpottingRetrofit;
+import uk.co.tezk.trainspotter.realm.ApiCache;
 
 /**
- * Created by tezk on 10/05/17.
+ * Interactor to deal with the API - stores the Class list and any Train lists to the local Realm database
+ * to allow caching
  */
 
 public class TrainSpotterInteractorImpl implements ITrainSpotterInteractor {
@@ -28,7 +30,10 @@ public class TrainSpotterInteractorImpl implements ITrainSpotterInteractor {
 
     @Override
     public Observable<ClassNumbers> getClassNumbers() {
-        return retrofit.getClassNumbers();
+        // Fetch then cache the numbers
+        Observable<ClassNumbers> classNumbers = retrofit.getClassNumbers();
+        ApiCache.getInstance().cacheClassList(classNumbers);
+        return classNumbers;
     }
 
     @Override

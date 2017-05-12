@@ -28,7 +28,6 @@ import uk.co.tezk.trainspotter.view.ClassListFragment;
 import uk.co.tezk.trainspotter.view.LogSpotFragment;
 import uk.co.tezk.trainspotter.view.TrainDetailFragment;
 import uk.co.tezk.trainspotter.view.TrainListFragment;
-import uk.co.tezk.trainspotter.view.dummy.DummyContent;
 
 import static android.R.drawable;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.CLASS_LIST;
@@ -41,6 +40,7 @@ import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION_KEY;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
         ClassListFragment.OnClassListFragmentInteractionListener,
+        TrainListFragment.OnTrainListFragmentInteractionListener,
         LogSpotFragment.OnFragmentInteractionListener
 
 {
@@ -186,6 +186,12 @@ public class MainActivity extends AppCompatActivity
         super.onSaveInstanceState(outState);
     }
 
+    @Override
+    public void onDisplayTrainsInClass(String classNum) {
+        // TODO : Determine whether we're tablet or phone - tablet show classes on left pane, trains on right
+        // TODO : phone, load the new fragment
+    }
+
     private void loadFragment(CURRENT_ACTION action, boolean addToBackStack) {
         Fragment fragment=null;
         Log.i("MA", "Loading fragment "+action+" with addToBackStack "+addToBackStack);
@@ -244,12 +250,6 @@ public class MainActivity extends AppCompatActivity
 
     }
 
-    // Deal with fragment communication
-    @Override
-    public void onListFragmentInteraction(DummyContent.DummyItem item) {
-
-    }
-
     private void setFabSpot() {
         fab.setImageDrawable(getResources().getDrawable(drawable.ic_menu_add));
         fab.setOnClickListener(new View.OnClickListener() {
@@ -269,5 +269,11 @@ public class MainActivity extends AppCompatActivity
                 Toast.makeText(context, "Camera!", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    @Override
+    public void onShowTrainDetails(String classNum, String trainNum) {
+        // TODO : depending on layout, if Tablet, left pane = train list, right = train details
+        // TODO : if phone, load in train details fragment
     }
 }

@@ -12,6 +12,15 @@ public class ClassDetails extends RealmObject {
     private String classId;
     private Integer sightingsRecorded;
     private String classCategory; // Currently not used, but might be useful in future to group the classes
+    private Integer totalTrains;
+
+    public Integer getTotalTrains() {
+        return totalTrains;
+    }
+
+    public void setTotalTrains(Integer totalTrains) {
+        this.totalTrains = totalTrains;
+    }
 
     public String getClassId() {
         return classId;

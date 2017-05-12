@@ -40,7 +40,7 @@ public class TrainSpotterApplication extends Application {
         // Initialise Realm
         Realm.init(this);
         RealmConfiguration config = new RealmConfiguration.Builder().
-                schemaVersion(1).
+                schemaVersion(2).
                 migration(new RealmMigration() {
                     @Override
                     public void migrate(DynamicRealm realm, long oldVersion, long newVersion) {
@@ -50,6 +50,9 @@ public class TrainSpotterApplication extends Application {
                             //    schema.get("MyRealmObject").removeField(("String3"));
                             //    schema.get("MyRealmObject").addField("string3", String.class);
                             //    Log.i("myapp","schema updated");
+                            schema.get("ClassDetails").addField("totalTrains", Integer.class);
+                            Log.i("myapp","schema updated from v1");
+                            oldVersion++;
                         }
                         return;
                     }
