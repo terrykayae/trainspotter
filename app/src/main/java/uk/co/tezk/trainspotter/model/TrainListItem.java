@@ -3,7 +3,9 @@ package uk.co.tezk.trainspotter.model;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class TrainListItem {
+import io.realm.RealmObject;
+
+public class TrainListItem extends RealmObject {
 
 @SerializedName("class")
 @Expose

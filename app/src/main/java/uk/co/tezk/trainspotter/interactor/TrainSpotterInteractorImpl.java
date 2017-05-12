@@ -17,6 +17,11 @@ public class TrainSpotterInteractorImpl implements ITrainSpotterInteractor {
 
     ITrainSpottingRetrofit retrofit;
 
+    // Default constructor
+     private TrainSpotterInteractorImpl() {
+        //TrainSpotterApplication.getApplication().getNetworkComponent().inject(this);
+    }
+
     public TrainSpotterInteractorImpl(ITrainSpottingRetrofit retrofit) {
         this.retrofit = retrofit;
     }

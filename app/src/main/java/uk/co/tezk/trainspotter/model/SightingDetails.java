@@ -3,14 +3,20 @@ package uk.co.tezk.trainspotter.model;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
+import io.realm.RealmObject;
+
 /**
- * Created by tezk on 10/05/17.
+ * Model object to manipulate sightings - used to store locally made sightings and sightings others have made that
+ * are retrieved from the API but not stored locally
  */
 
-public class SightingDetails {
+public class SightingDetails extends RealmObject {
+    // These fields are used only for the local Realm sightings that this user makes, the API doesn't make use of them
     private String trainId;
     private String trainClass;
-
+    private String time;
+    private String locationName;
+    // These fields are also stored in Realm, but are filled by calls to the API
     @SerializedName("lat")
     @Expose
     private float lat;
@@ -67,5 +73,21 @@ public class SightingDetails {
 
     public void setTrainClass(String trainClass) {
         this.trainClass = trainClass;
+    }
+
+    public String getTime() {
+        return time;
+    }
+
+    public void setTime(String time) {
+        this.time = time;
+    }
+
+    public String getLocationName() {
+        return locationName;
+    }
+
+    public void setLocationName(String locationName) {
+        this.locationName = locationName;
     }
 }

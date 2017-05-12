@@ -2,20 +2,21 @@ package uk.co.tezk.trainspotter.presenter;
 
 import java.util.List;
 
+import uk.co.tezk.trainspotter.model.TrainListItem;
+
 /**
  * Created by tezk on 11/05/17.
  */
 
-public interface IClassListPresenter {
-    interface IView {
-        void showClassList(List<String> classList);
+public interface ITrainListPresenter {
+    public interface IView {
+        void showTrainList(List<TrainListItem> trainList);
 
         void onStartLoading();
 
         void onErrorLoading(String message);
 
         void onCompletedLoading();
-
     }
 
     interface IPresenter {
@@ -23,6 +24,7 @@ public interface IClassListPresenter {
 
         void unbind();
 
-        void retrieveData();
+        void retrieveData(String classNum);
     }
+
 }

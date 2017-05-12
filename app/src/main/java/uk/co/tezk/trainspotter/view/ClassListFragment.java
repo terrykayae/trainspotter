@@ -59,6 +59,8 @@ public class ClassListFragment extends Fragment implements IClassListPresenter.I
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        Log.i("CLF", "oncreate");
+
         if (getArguments() != null) {
             mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
         }
@@ -74,11 +76,11 @@ public class ClassListFragment extends Fragment implements IClassListPresenter.I
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_class_list, container, false);
-
+        RecyclerView recyclerView = (RecyclerView) view.findViewById(R.id.classListRecyclerview);
+        Log.i("CLF", "onCreateView");
         // Set the adapter
-        if (view instanceof RecyclerView) {
+        if (recyclerView instanceof RecyclerView) {
             Context context = view.getContext();
-            RecyclerView recyclerView = (RecyclerView) view;
             if (mColumnCount <= 1) {
                 recyclerView.setLayoutManager(new LinearLayoutManager(context));
             } else {
@@ -109,18 +111,18 @@ public class ClassListFragment extends Fragment implements IClassListPresenter.I
 
     @Override
     public void onStartLoading() {
-        progressDialog.show();
+        //progressDialog.show();
     }
 
     @Override
     public void onErrorLoading(String message) {
         progressDialog.dismiss();
-        Toast.makeText(getActivity(), "Error loading data", Toast.LENGTH_SHORT).show();
+        Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onCompletedLoading() {
-        progressDialog.dismiss();
+        //progressDialog.dismiss();
     }
 
     @Override

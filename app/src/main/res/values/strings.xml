@@ -8,7 +8,7 @@
     <string name="navBarHeader">Train Spotter</string>
     <string name="navBarSub">tezksoftware\@tezk</string>
 
-    <!-- TODO: Remove or change this placeholder text -->
+    <!-- My app strings, English -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="please_wait_whilst_initialising">Please wait whilst initialising</string>
     <string name="train_id">Train ID :</string>
