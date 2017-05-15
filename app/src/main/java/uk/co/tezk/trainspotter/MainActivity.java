@@ -21,8 +21,13 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import com.google.android.gms.maps.SupportMapFragment;
+
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Stack;
 
+import uk.co.tezk.trainspotter.model.Constant;
 import uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION;
 import uk.co.tezk.trainspotter.view.ClassListFragment;
 import uk.co.tezk.trainspotter.view.LogSpotFragment;
@@ -30,12 +35,14 @@ import uk.co.tezk.trainspotter.view.TrainDetailFragment;
 import uk.co.tezk.trainspotter.view.TrainListFragment;
 
 import static android.R.drawable;
+import static uk.co.tezk.trainspotter.Utilitity.isLandscape;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.CLASS_LIST;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.INITIALISING;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.INVALID;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.LOG_SPOT;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.TRAIN_LIST;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION_KEY;
+import static uk.co.tezk.trainspotter.model.Constant.SHOW_CLASS;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
@@ -44,13 +51,21 @@ public class MainActivity extends AppCompatActivity
         LogSpotFragment.OnFragmentInteractionListener
 
 {
+
     FloatingActionButton fab;
     CURRENT_ACTION currentAction;
 
     private Context context;
     // Store actions! If user pressed back, calling popBackStack() returns to previous fragment, but we don't know what activity that is
     // Store last activity here before updating
-    private Stack<CURRENT_ACTION>actionStack = new Stack();
+    private Stack<CURRENT_ACTION> actionStack = new Stack();
+    // Set when views are loaded to determine layout
+    private boolean landscape;
+    private boolean tablet;
+
+    Fragment fragment;
+    // If we're loading two fragments, this is what and were for the second
+    Fragment secondFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,7 +74,7 @@ public class MainActivity extends AppCompatActivity
         currentAction = INITIALISING;
         context = this;
         // Initalise the action stack - we don't push the current state from onResume, so need first element to be CLASS_LIST
-        if (actionStack.size()==0)
+        if (actionStack.size() == 0)
             actionStack.push(CLASS_LIST);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -77,8 +92,8 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        if (savedInstanceState!=null) {
-            if (savedInstanceState.getInt(CURRENT_ACTION_KEY)>0) {
+        if (savedInstanceState != null) {
+            if (savedInstanceState.getInt(CURRENT_ACTION_KEY) > 0) {
                 // We were doing something and got recreated - set currentAction so onResume() knows what to do
                 currentAction = CURRENT_ACTION.fromInteger(savedInstanceState.getInt(CURRENT_ACTION_KEY));
                 if (currentAction == INVALID) {
@@ -91,13 +106,15 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onResume() {
         super.onResume();
+        // Close any progress dialogues and fade the background
         doneInitialising();
         if (currentAction == INITIALISING) {
             currentAction = CLASS_LIST;
         }
-        // Load fragment, but don't add to the backstack
+        // Load fragment, but don't add to the backstack - if we did on every onResume, we get a stack full!
         Log.i("MA", "onResume");
-        loadFragment(currentAction, false);
+        // TODO : Store "null" in onRestoreInstance = will be details of second view in multipane layout
+        loadFragment(currentAction, false, null);
     }
 
     @Override
@@ -110,7 +127,7 @@ public class MainActivity extends AppCompatActivity
             // Navigation drawer is closed, move back one fragment, quit if the stack is empty
             if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
                 getSupportFragmentManager().popBackStack();
-                if (actionStack.size()>0) {
+                if (actionStack.size() > 0) {
                     // Should never be 0 if we're popping - if last action was Spot, change the FAB button back
                     if (actionStack.pop() == LOG_SPOT) {
                         setFabSpot();
@@ -171,7 +188,6 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-
     private void doneInitialising() {
         //Called when we've completed the initialisation process - hide any progress dialogs, change the back
         //image to opaque
@@ -186,31 +202,60 @@ public class MainActivity extends AppCompatActivity
         super.onSaveInstanceState(outState);
     }
 
-    @Override
-    public void onDisplayTrainsInClass(String classNum) {
-        // TODO : Determine whether we're tablet or phone - tablet show classes on left pane, trains on right
-        // TODO : phone, load the new fragment
-    }
 
-    private void loadFragment(CURRENT_ACTION action, boolean addToBackStack) {
-        Fragment fragment=null;
-        Log.i("MA", "Loading fragment "+action+" with addToBackStack "+addToBackStack);
+    private void loadFragment(CURRENT_ACTION action, boolean addToBackStack, Map<String, String> params) {
+        //Reset the fragment holders
+        fragment = null;
+        secondFragment = null;
+        int secondViewId = 0;
+        // Check for multi fragment layout
+        landscape = isLandscape(this);
+        if (findViewById(R.id.classListLandscapeLayout) != null || findViewById(R.id.trainListLandscapeLayout) != null) {
+            // Landscape view found, load fragment
+            tablet = true;
+        }
+        // TODO : Find more elegant way of finding whether we're tablet
+
+        Log.i("MA", "Loading fragment " + action + " with addToBackStack " + addToBackStack);
         //setFabSpot();
+
         switch (action) {
             case CLASS_LIST:
                 fragment = new ClassListFragment();
+                if (landscape) {
+                    // We're landscape so need to load train list as well
+                    secondViewId = R.id.trainListFragmentHolder;
+                    secondFragment = new TrainListFragment();
+                    String classToShow = params==null?"1":params.get(Constant.SHOW_CLASS);
+                    if (params==null)
+                        ((TrainListFragment)secondFragment).setShowTrainsForClass("1");
+                    else
+                        ((TrainListFragment)secondFragment).setShowTrainsForClass(params.get(classToShow));
+                }
+
                 break;
             case LOG_SPOT:
-                setFabCamera();
+                setFabSave();
                 fragment = new LogSpotFragment();
                 break;
             case TRAIN_LIST:
-                fragment = new TrainListFragment();
+                if (landscape) {
+                    // If we're landscape, the train list goes on the right, class list on the left
+
+                } else {
+                    // Portrait, just show the TrainList
+                    fragment = new TrainListFragment();
+                }
                 break;
             case TRAIN_INFO:
-                fragment = new TrainDetailFragment();
+                // if landscape, train details on the right, train list on left
+                if (landscape) {
+
+                } else {
+                    fragment = new TrainDetailFragment();
+                }
                 break;
-            default :
+            default:
                 fragment = new ClassListFragment();
         }
 
@@ -219,31 +264,63 @@ public class MainActivity extends AppCompatActivity
             fragment.setReturnTransition(new Explode());
         }
 
+        // Swap in the fragment
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
+
         transaction.replace(R.id.mainContainer, fragment);
+        if (secondFragment!=null) {
+            transaction.replace(secondViewId, secondFragment);
+        }
+
+        // Do we need to load a map fragment into the view?
+        if (currentAction == LOG_SPOT) {
+                SupportMapFragment mSupportMapFragment = SupportMapFragment.newInstance();
+                transaction.replace(R.id.mapHolder, mSupportMapFragment);
+                mSupportMapFragment.getMapAsync((LogSpotFragment)fragment);
+                // Add another LOG_SPOT to the actionStack as we'll be popping two fragments?
+                actionStack.push(LOG_SPOT);
+            }
         if (addToBackStack) {
             transaction.addToBackStack(null);
             actionStack.push(action);
         }
+
         transaction.commit();
 
+        tablet = false;
+        landscape = false;
         // Now that the fragment has loaded, check for the presence of Landscape view holders which indicate we're
         // on a tablet
         if (action == CLASS_LIST) {
-            if (findViewById(R.id.classListLandscapeLayout)!=null) {
+            if (findViewById(R.id.classListLandscapeLayout) != null) {
                 // Landscape class list! Load Train list fragment into holder
+                tablet = true;
+                landscape = true;
             }
         } else if (action == TRAIN_LIST) {
-            if (findViewById(R.id.trainListLandscapeLayout)!=null) {
+            if (findViewById(R.id.trainListLandscapeLayout) != null) {
                 // Landscape train list! Load train details fragment into holder
+                tablet = true;
+                landscape = true;
             }
         }
 
         currentAction = action;
-
     }
 
+    @Override
+    public void onDisplayTrainsInClass(String classNum) {
+        // Handler for click events from the class list
+        // TODO : Determine whether we're tablet or phone - tablet show classes on left pane, trains on right
+        // TODO : phone, load the new fragment
+        Map args = new HashMap();
+        args.put(SHOW_CLASS, classNum);
+        currentAction = TRAIN_LIST;
+        loadFragment(currentAction, true, args);
+        Log.i("MA", "display trains in class " + classNum);
+        View view = findViewById(R.id.trainListFragmentHolder);
+    }
 
     @Override // onSpotLog interaction
     public void onFragmentInteraction(Uri uri) {
@@ -256,7 +333,7 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onClick(View view) {
                 // Load the "Spotting" fragment, save on the backstack
-                loadFragment(CURRENT_ACTION.LOG_SPOT, true);
+                loadFragment(CURRENT_ACTION.LOG_SPOT, true, null);
             }
         });
     }
@@ -271,9 +348,29 @@ public class MainActivity extends AppCompatActivity
         });
     }
 
+    private void setFabSave() {
+        fab.setImageDrawable(getResources().getDrawable(drawable.ic_menu_save));
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+               // Toast.makeText(context, "Save!", Toast.LENGTH_SHORT).show();
+                if (fragment instanceof LogSpotFragment) {
+                    Log.i("MA", "Saving!");
+                    LogSpotFragment logSpotFragment = (LogSpotFragment)fragment;
+                    logSpotFragment.handleSave();
+                    onBackPressed();
+                } else {
+                    Log.i("MA", "Save pressed on none savabble screen?");
+                }
+            }
+        });
+    }
+
+
     @Override
     public void onShowTrainDetails(String classNum, String trainNum) {
         // TODO : depending on layout, if Tablet, left pane = train list, right = train details
         // TODO : if phone, load in train details fragment
+        Log.i("MA", "onShowTrainDetails " + classNum + ", " + trainNum);
     }
 }

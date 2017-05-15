@@ -8,6 +8,7 @@ import dagger.Component;
 @Component(modules = NetworkModule.class)
 public interface NetworkComponent {
     ITrainSpottingRetrofit provideApi();
+    void inject(Submitters submitters);
     //void inject(ClassListPresenterImpl classListPresenter) ;
     //void inject(TrainListPresenterImpl trainListPresenter) ;
     //void inject(TrainDetailPresenterImpl trainDetailPresenter) ;

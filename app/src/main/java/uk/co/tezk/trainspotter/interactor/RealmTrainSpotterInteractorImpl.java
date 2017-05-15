@@ -1,5 +1,7 @@
 package uk.co.tezk.trainspotter.interactor;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,8 +30,11 @@ public class RealmTrainSpotterInteractorImpl implements ITrainSpotterInteractor 
         if (realm == null)
             realm = Realm.getDefaultInstance();
 
+        Log.i("RTSI", "Count = "+realm.where(ClassDetails.class).count());
+
         RealmResults<ClassDetails> results = realm.where(ClassDetails.class).findAll();
         // Nothing in database, return empty observable
+        Log.i("RTSI", "Result set = "+results.size());
         if (results.size()==0)
             return Observable.empty();
         // Need to return an observable that is an instance of ClassNumbers with a list of Strings
@@ -37,8 +42,9 @@ public class RealmTrainSpotterInteractorImpl implements ITrainSpotterInteractor 
         List <String> classNumberList = new ArrayList();
         classNumbers.setClassNumbers(classNumberList);
         for (ClassDetails each : results) {
-            classNumberList.add(each.getClassId());
+            classNumberList.add(each.getClassId()+" realm");
         }
+        Log.i("RTSI", "returning "+classNumbers.getClassNumbers().size());
         return Observable.just(classNumbers);
     }
 

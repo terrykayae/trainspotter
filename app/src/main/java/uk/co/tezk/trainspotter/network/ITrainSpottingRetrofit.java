@@ -33,7 +33,7 @@ public interface ITrainSpottingRetrofit {
     public Observable<TrainDetail> getTrainDetails(@Path("classId") String classNumber, @Path("trainId") String trainId) ;
 
     @POST(TRAIN_SPOTTING_BASE_URL+TRAIN_SIGHTING_API)
-    public void addTrainSighting(
+    public Observable<String> addTrainSighting(
             @Path("classId") String classNumber,
             @Path("trainId") String trainId,
             @Query("date") String date,

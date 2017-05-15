@@ -23,4 +23,5 @@
     <string name="class_string">Class</string>
     <string name="no_sightings_logged">You have not logged any sightings for this class</string>
     <string name="sighting_count_message">You have logged sightings on %1$d out of %2$d trains</string>
+    <string name="title_activity_maps">Map</string>
 </resources>

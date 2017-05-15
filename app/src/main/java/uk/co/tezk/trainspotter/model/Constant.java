@@ -39,12 +39,19 @@ public class Constant {
             return 0;
         }
     };
-    public static final String API_KEY = "gavffvfavaawjihwj0[";
+    public static final String API_KEY = "gavffvfavaawjihwj0";
 
     public static final String CURRENT_ACTION_KEY = "current_action";
+    public static final String SECONDARY_ACTION_KEY = "secondary_action";
     public static final String TRAIN_SPOTTING_BASE_URL = "http://api.tezk.co.uk:8080/MyTrainApi/train/";
     public static final String CLASS_LIST_API = "classes";
     public static final String TRAIN_LIST_API = "class/{classId}";
     public static final String TRAIN_DETAIL_API = "engine/{classId}/{trainId}";
-    public static final String TRAIN_SIGHTING_API = "sighting/{classId}/{trainId}";
+    public static final String TRAIN_SIGHTING_API = "spotted/{classId}/{trainId}";
+
+    // keys for attribute maps
+    public static final String SHOW_CLASS = "1";
+    public static final String SHOW_ENGINE = "2";
+
+    public static final String FRAG_TAG_DATE_PICKER = "Date picker";
 }

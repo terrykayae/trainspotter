@@ -91,7 +91,7 @@ public class ClassListPresenterImpl implements IClassListPresenter.IPresenter {
     public void retrieveData() {
         view.onStartLoading();
         concat(cachedInteractor.getClassNumbers(), interactor.getClassNumbers())
-                .take(1)
+                .first()
                 .observeOn(observeScheduler)
                 .subscribeOn(subscribeScheduler)
                 .subscribe(new Observer<ClassNumbers>() {

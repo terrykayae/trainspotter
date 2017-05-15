@@ -20,6 +20,7 @@ import uk.co.tezk.trainspotter.model.TrainListItem;
 
 public class ApiCache {
     private static ApiCache apiCache;
+    private Realm realm;
 
     public static synchronized ApiCache getInstance() {
         if (apiCache == null) {
@@ -30,14 +31,14 @@ public class ApiCache {
 
     public void cacheClassList(Observable<ClassNumbers> classNumbersObservable) {
         // Fetch Realm instance each call as we're not sure what thread we'll be called from
-        final Realm realm = Realm.getDefaultInstance();
+
         // TODO : this clears the Class list but is only called if the cached details aren't available. This should only be called once
-        realm.executeTransaction(new Realm.Transaction() {
+  /*      Realm.getDefaultInstance().executeTransaction(new Realm.Transaction() {
             @Override
             public void execute(Realm realm) {
                 realm.delete(ClassDetails.class);
             }
-        });
+        });*/
 
         classNumbersObservable
                 .observeOn(Schedulers.io())
@@ -51,16 +52,18 @@ public class ApiCache {
                 .subscribe(new Observer<String>() {
                     @Override
                     public void onCompleted() {
-
+                        realm = null;
                     }
 
                     @Override
                     public void onError(Throwable e) {
-
+                        Log.i("ApiCache","error "+e.getMessage());
                     }
 
                     @Override
                     public void onNext(String classNumber) {
+                        if (realm == null)
+                            realm = Realm.getDefaultInstance();
                         final ClassDetails classDetails = new ClassDetails();
                         classDetails.setClassId(classNumber);
                         realm.executeTransaction(new Realm.Transaction() {
@@ -69,7 +72,6 @@ public class ApiCache {
                                 realm.copyToRealm(classDetails);
                             }
                         });
-                        Log.i("ApiCache","saved class "+classNumber+" to Realm");
                     }
                 });
     }

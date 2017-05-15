@@ -55,7 +55,6 @@ public class ClassListFragment extends Fragment implements IClassListPresenter.I
 
         presenter = ClassListPresenterImpl.getInstance();
         presenter.bind(this);
-        presenter.retrieveData();
     }
 
     @Override
@@ -68,6 +67,7 @@ public class ClassListFragment extends Fragment implements IClassListPresenter.I
         // Set the adapter
         Context context = view.getContext();
         recyclerView.setLayoutManager(new LinearLayoutManager(context));
+        presenter.retrieveData();
         return view;
     }
 
@@ -122,6 +122,7 @@ public class ClassListFragment extends Fragment implements IClassListPresenter.I
     @Override
     public void onItemClick(String classId, boolean longClick) {
         // TODO : Implement
+        mListener.onDisplayTrainsInClass(classId);
     }
 
     /**

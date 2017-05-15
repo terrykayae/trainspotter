@@ -7,16 +7,18 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_margin="@dimen/fragment_margin">
+        >
 
         <GridLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="12dp"
+            android:layout_margin="@dimen/fragment_margin"
+            android:layout_centerHorizontal="true"
             android:id="@+id/gridLayout">
 
             <TextView
-                android:id="@+id/tvId"
+                android:id="@+id/tvIdLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/train_id"
@@ -34,22 +36,23 @@
                 android:layout_column="1"
                 />
             <TextView
-                android:id="@+id/tvDate"
+                android:id="@+id/tvDateLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/date"
+                android:layout_margin="8dp"
                 android:layout_row="1"
                 android:layout_column="0" />
 
-            <EditText
-                android:id="@+id/etDate"
+            <TextView
+                android:id="@+id/tvDate"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_column="1"
+                android:padding="8dp"
                 android:layout_row="1"
-                android:ems="10"
-                android:inputType="date"
-                android:text="" />
+                android:layout_column="1"
+                android:text="TextView" />
+
         </GridLayout>
 
         <android.support.v7.widget.RecyclerView
@@ -64,9 +67,16 @@
             android:id="@+id/mapHolder"
             android:layout_height="match_parent"
             android:layout_width="match_parent"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
+            tools:context="uk.co.tezk.trainspotter.view.MapsActivity"
             android:layout_below="@+id/rvSpotImages"
-            >
 
+            >
+            <TextView
+                android:layout_gravity="center"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Map loading, please wait"/>
         </FrameLayout>
 
     </RelativeLayout>
