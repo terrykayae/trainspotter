@@ -3,25 +3,45 @@ package uk.co.tezk.trainspotter.view;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import uk.co.tezk.trainspotter.R;
+import uk.co.tezk.trainspotter.model.TrainDetail;
+import uk.co.tezk.trainspotter.model.TrainListItem;
+import uk.co.tezk.trainspotter.presenter.ITrainListPresenter;
+import uk.co.tezk.trainspotter.presenter.TrainListPresenterImpl;
 
 /**
  * A simple {@link Fragment} subclass.
  * Activities that contain this fragment must implement the
  * {@link OnTrainListFragmentInteractionListener} interface
  * to handle interaction events.
- * Use the {@link TrainListFragment#newInstance} factory method to
- * create an instance of this fragment.
  */
-public class TrainListFragment extends Fragment {
+public class TrainListFragment extends Fragment implements
+        ITrainListPresenter.IView,
+        TrainListRecyclerViewAdapter.OnTrainListItemClickListener {
+
+    private ITrainListPresenter.IPresenter presenter;
 
     private OnTrainListFragmentInteractionListener mListener;
+
+    List <TrainListItem> mTrainList;
+    private String showTrainsForClass;
+
+    @BindView(R.id.trainListRecyclerView) RecyclerView trainListRecyclerView;
 
     public String getShowTrainsForClass() {
         return showTrainsForClass;
@@ -29,26 +49,54 @@ public class TrainListFragment extends Fragment {
 
     public void setShowTrainsForClass(String showTrainsForClass) {
         this.showTrainsForClass = showTrainsForClass;
+        Log.i("TLF", "Setting class to "+showTrainsForClass);
     }
-
-    private String showTrainsForClass;
 
     public TrainListFragment() {
         // Required empty public constructor
+        mTrainList = new ArrayList();
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        Log.i("TLF", "Get trains for "+showTrainsForClass);
-
-        // Inflate the layout for this fragment
+       // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_train_list, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        // Initialise Butterknife anotations
+        ButterKnife.bind(this, view);
+        trainListRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        Log.i("TLF", "Get trains for "+showTrainsForClass);
+    }
+
+    public void reloadTrainList() {
+        presenter = TrainListPresenterImpl.getInstance();
+        presenter.bind(this);
+        if (mTrainList.size()==0) {
+            if (showTrainsForClass==null || showTrainsForClass.equals("0")) {
+                return;
+            }
+            Log.i("TLF", "onResume, calling retrieveData "+showTrainsForClass);
+            presenter.retrieveData(showTrainsForClass);
+        } else {
+            Log.i("TLF", "onResume, mTrainList.size = "+mTrainList.size());
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        reloadTrainList();
     }
 
     // TODO: Rename method, update argument and hook method into UI event
@@ -74,6 +122,33 @@ public class TrainListFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         mListener = null;
+        presenter.unbind();
+    }
+
+    @Override
+    public void showTrainList(List<TrainDetail> trainList) {
+        trainListRecyclerView.setAdapter(new TrainListRecyclerViewAdapter(trainList, this, getContext()));
+    }
+
+    @Override
+    public void onStartLoading() {
+        Log.i("TLF", "Loading data");
+    }
+
+    @Override
+    public void onErrorLoading(String message) {
+        Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void onCompletedLoading() {
+        Log.i("TLF", "Completed loading");
+    }
+
+    @Override
+    public void onItemClick(String classId, String trainNum, boolean longClick) {
+        // Received from the Adapter, pass to the Activity for actioning
+        mListener.onShowTrainDetails(classId, trainNum);
     }
 
     /**

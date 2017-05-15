@@ -6,6 +6,7 @@ import rx.Observer;
 import rx.Scheduler;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
+import rx.subscriptions.CompositeSubscription;
 import uk.co.tezk.trainspotter.TrainSpotterApplication;
 import uk.co.tezk.trainspotter.interactor.ITrainSpotterInteractor;
 import uk.co.tezk.trainspotter.interactor.RealmTrainSpotterInteractorImpl;
@@ -20,6 +21,7 @@ import static rx.Observable.concat;
 
 public class ClassListPresenterImpl implements IClassListPresenter.IPresenter {
     private static ClassListPresenterImpl presenter;
+    CompositeSubscription compositeSubscription = new CompositeSubscription();
 
     IClassListPresenter.IView view;
     Scheduler observeScheduler;
@@ -78,19 +80,9 @@ public class ClassListPresenterImpl implements IClassListPresenter.IPresenter {
     }
 
     @Override
-    public void bind(IClassListPresenter.IView view) {
-        this.view = view;
-    }
-
-    @Override
-    public void unbind() {
-        view = null;
-    }
-
-    @Override
     public void retrieveData() {
         view.onStartLoading();
-        concat(cachedInteractor.getClassNumbers(), interactor.getClassNumbers())
+        compositeSubscription.add(concat(cachedInteractor.getClassNumbers(), interactor.getClassNumbers())
                 .first()
                 .observeOn(observeScheduler)
                 .subscribeOn(subscribeScheduler)
@@ -109,6 +101,18 @@ public class ClassListPresenterImpl implements IClassListPresenter.IPresenter {
                     public void onNext(ClassNumbers classNumbers) {
                         view.showClassList(classNumbers.getClassNumbers());
                     }
-                });
+                }));
+    }
+
+    @Override
+    public void bind(IClassListPresenter.IView view) {
+        this.view = view;
+    }
+
+    @Override
+    public void unbind() {
+        view = null;
+        if (compositeSubscription!=null && compositeSubscription.hasSubscriptions())
+            compositeSubscription.unsubscribe();
     }
 }

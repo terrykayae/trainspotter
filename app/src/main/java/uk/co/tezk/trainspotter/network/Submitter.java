@@ -17,20 +17,20 @@ import static uk.co.tezk.trainspotter.model.Constant.API_KEY;
  * Class to deal with sending data to the servers
  */
 
-public class Submitters {
-    private static Submitters submitters;
+public class Submitter {
+    private static Submitter submitter;
     @Inject
     static ITrainSpottingRetrofit trainSpottingApi;
 
-    private Submitters() {
+    private Submitter() {
         TrainSpotterApplication.getApplication().getNetworkComponent().inject(this);
     }
 
-    public static Submitters getInstance() {
-        if (submitters == null) {
-            submitters = new Submitters();
+    public static Submitter getInstance() {
+        if (submitter == null) {
+            submitter = new Submitter();
         }
-        return submitters;
+        return submitter;
     }
 
     public void submitSighting(SightingDetails sightingDetails) {
@@ -56,7 +56,7 @@ public class Submitters {
 
                     @Override
                     public void onNext(String s) {
-                        Log.i("Submitters", "s = " + s);
+                        Log.i("Submitter", "s = " + s);
                     }
                 });
     }

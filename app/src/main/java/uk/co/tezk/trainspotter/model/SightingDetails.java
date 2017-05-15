@@ -14,6 +14,7 @@ public class SightingDetails extends RealmObject {
     // These fields are used only for the local Realm sightings that this user makes, the API doesn't make use of them
     private String trainId;
     private String trainClass;
+    // if time is null for any sighting, this marks it as a sighting pulled from the API
     private String time;
     private String locationName;
     // These fields are also stored in Realm, but are filled by calls to the API

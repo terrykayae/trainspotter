@@ -3,6 +3,7 @@ package uk.co.tezk.trainspotter.realm;
 import android.util.Log;
 
 import io.realm.Realm;
+import io.realm.RealmResults;
 import uk.co.tezk.trainspotter.model.SightingDetails;
 
 /**
@@ -24,7 +25,7 @@ public class RealmHandler {
         return realmHandler;
     }
 
-    public static void persistSightingDetails(final SightingDetails sightingDetails) {
+    public void persistSightingDetails(final SightingDetails sightingDetails) {
         Thread t = new Thread() {
             // Send to background thread
             @Override
@@ -54,5 +55,12 @@ public class RealmHandler {
             e.printStackTrace();
         }
 
+    }
+
+    public RealmResults<SightingDetails> getSightings(String classNum, String trainNum) {
+        //TODO : get on classNum as well
+        Realm realm = Realm.getDefaultInstance();
+        RealmResults<SightingDetails> results = realm.where(SightingDetails.class).equalTo("trainId", trainNum).findAll();
+        return results;
     }
 }

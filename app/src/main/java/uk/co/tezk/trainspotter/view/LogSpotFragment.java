@@ -27,7 +27,7 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import uk.co.tezk.trainspotter.R;
 import uk.co.tezk.trainspotter.model.SightingDetails;
-import uk.co.tezk.trainspotter.network.Submitters;
+import uk.co.tezk.trainspotter.network.Submitter;
 import uk.co.tezk.trainspotter.realm.RealmHandler;
 
 import static uk.co.tezk.trainspotter.model.Constant.FRAG_TAG_DATE_PICKER;
@@ -149,7 +149,7 @@ public class LogSpotFragment extends Fragment implements OnMapReadyCallback {
         // Store in the DB
         RealmHandler.getInstance().persistSightingDetails(sightingDetails);
         // Send to the server
-        Submitters.getInstance().submitSighting(sightingDetails);
+        Submitter.getInstance().submitSighting(sightingDetails);
     }
 
     @OnClick(R.id.tvDate)

@@ -42,7 +42,7 @@ public class RealmTrainSpotterInteractorImpl implements ITrainSpotterInteractor 
         List <String> classNumberList = new ArrayList();
         classNumbers.setClassNumbers(classNumberList);
         for (ClassDetails each : results) {
-            classNumberList.add(each.getClassId()+" realm");
+            classNumberList.add(each.getClassId());
         }
         Log.i("RTSI", "returning "+classNumbers.getClassNumbers().size());
         return Observable.just(classNumbers);

@@ -87,6 +87,7 @@ public class ClassListFragment extends Fragment implements IClassListPresenter.I
     public void onDetach() {
         super.onDetach();
         mListener = null;
+        presenter.unbind();
     }
 
     @Override

@@ -214,6 +214,7 @@ public class MainActivity extends AppCompatActivity
             // Landscape view found, load fragment
             tablet = true;
         }
+
         // TODO : Find more elegant way of finding whether we're tablet
 
         Log.i("MA", "Loading fragment " + action + " with addToBackStack " + addToBackStack);
@@ -221,16 +222,16 @@ public class MainActivity extends AppCompatActivity
 
         switch (action) {
             case CLASS_LIST:
-                fragment = new ClassListFragment();
+                // If main fragment is already ClassListFragment, don't load again (Happens when Landscape and a class is clicked)
+                if (!(fragment instanceof ClassListFragment))
+                    fragment = new ClassListFragment();
                 if (landscape) {
                     // We're landscape so need to load train list as well
                     secondViewId = R.id.trainListFragmentHolder;
                     secondFragment = new TrainListFragment();
-                    String classToShow = params==null?"1":params.get(Constant.SHOW_CLASS);
-                    if (params==null)
-                        ((TrainListFragment)secondFragment).setShowTrainsForClass("1");
-                    else
-                        ((TrainListFragment)secondFragment).setShowTrainsForClass(params.get(classToShow));
+                    String classToShow = (params==null?"1":params.get(Constant.SHOW_CLASS));
+                    Log.i("MA", "loadFragment, showing class "+classToShow);
+                    ((TrainListFragment)secondFragment).setShowTrainsForClass(classToShow);
                 }
 
                 break;
@@ -245,6 +246,10 @@ public class MainActivity extends AppCompatActivity
                 } else {
                     // Portrait, just show the TrainList
                     fragment = new TrainListFragment();
+
+                    String classToShow = (params==null?"1":params.get(Constant.SHOW_CLASS));
+                    Log.i("MA", "loadFragment, (port) showing class "+classToShow);
+                    ((TrainListFragment)fragment).setShowTrainsForClass(classToShow);
                 }
                 break;
             case TRAIN_INFO:
@@ -316,10 +321,16 @@ public class MainActivity extends AppCompatActivity
         // TODO : phone, load the new fragment
         Map args = new HashMap();
         args.put(SHOW_CLASS, classNum);
-        currentAction = TRAIN_LIST;
-        loadFragment(currentAction, true, args);
+        if (landscape) {
+            // Current action doesn't change as we still show class list in landscape, tell second fragment to load new class
+            ((TrainListFragment)secondFragment).setShowTrainsForClass(classNum);
+            ((TrainListFragment)secondFragment).reloadTrainList();
+        } else {
+            currentAction = TRAIN_LIST;
+            loadFragment(currentAction, true, args);
+        }
         Log.i("MA", "display trains in class " + classNum);
-        View view = findViewById(R.id.trainListFragmentHolder);
+        //View view = findViewById(R.id.trainListFragmentHolder);
     }
 
     @Override // onSpotLog interaction

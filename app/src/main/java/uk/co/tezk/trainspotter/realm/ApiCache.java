@@ -21,6 +21,7 @@ import uk.co.tezk.trainspotter.model.TrainListItem;
 public class ApiCache {
     private static ApiCache apiCache;
     private Realm realm;
+    private Object lock = new Object();
 
     public static synchronized ApiCache getInstance() {
         if (apiCache == null) {
@@ -39,41 +40,55 @@ public class ApiCache {
                 realm.delete(ClassDetails.class);
             }
         });*/
+        if (realm!=null) {
+            // Data is currently being persisted,
+            do {
+                synchronized (lock) {
+                    Log.i("API", "Waiting for lock to be released");
+                }
+            } while (realm!=null);
+        }
 
-        classNumbersObservable
-                .observeOn(Schedulers.io())
-                .subscribeOn(Schedulers.io())
-                .flatMap(new Func1<ClassNumbers, Observable<String>>() {
-                    @Override
-                    public Observable<String> call(ClassNumbers classNumbers) {
-                        return Observable.from(classNumbers.getClassNumbers());
-                    }
-                })
-                .subscribe(new Observer<String>() {
-                    @Override
-                    public void onCompleted() {
-                        realm = null;
-                    }
+        synchronized (lock) {
+            classNumbersObservable
+                    .observeOn(Schedulers.io())
+                    .subscribeOn(Schedulers.io())
+                    .flatMap(new Func1<ClassNumbers, Observable<String>>() {
+                        @Override
+                        public Observable<String> call(ClassNumbers classNumbers) {
+                            return Observable.from(classNumbers.getClassNumbers());
+                        }
+                    })
+                    .subscribe(new Observer<String>() {
+                        @Override
+                        public void onCompleted() {
 
-                    @Override
-                    public void onError(Throwable e) {
-                        Log.i("ApiCache","error "+e.getMessage());
-                    }
+                            realm = null;
+                            lock.notifyAll();
+                        }
 
-                    @Override
-                    public void onNext(String classNumber) {
-                        if (realm == null)
-                            realm = Realm.getDefaultInstance();
-                        final ClassDetails classDetails = new ClassDetails();
-                        classDetails.setClassId(classNumber);
-                        realm.executeTransaction(new Realm.Transaction() {
-                            @Override
-                            public void execute(Realm realm) {
-                                realm.copyToRealm(classDetails);
-                            }
-                        });
-                    }
-                });
+                        @Override
+                        public void onError(Throwable e) {
+                            Log.i("ApiCache", "error " + e.getMessage());
+                            realm = null;
+                          //  lock.notifyAll();
+                        }
+
+                        @Override
+                        public void onNext(String classNumber) {
+                            if (realm == null)
+                                realm = Realm.getDefaultInstance();
+                            final ClassDetails classDetails = new ClassDetails();
+                            classDetails.setClassId(classNumber);
+                            realm.executeTransaction(new Realm.Transaction() {
+                                @Override
+                                public void execute(Realm realm) {
+                                    realm.copyToRealm(classDetails);
+                                }
+                            });
+                        }
+                    });
+        }
     }
 
     public void cacheTrainList(Observable <List<TrainListItem>> trainsObservable) {

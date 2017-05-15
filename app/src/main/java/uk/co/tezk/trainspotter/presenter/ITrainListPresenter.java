@@ -2,7 +2,7 @@ package uk.co.tezk.trainspotter.presenter;
 
 import java.util.List;
 
-import uk.co.tezk.trainspotter.model.TrainListItem;
+import uk.co.tezk.trainspotter.model.TrainDetail;
 
 /**
  * Created by tezk on 11/05/17.
@@ -10,7 +10,7 @@ import uk.co.tezk.trainspotter.model.TrainListItem;
 
 public interface ITrainListPresenter {
     public interface IView {
-        void showTrainList(List<TrainListItem> trainList);
+        void showTrainList(List<TrainDetail> trainList);
 
         void onStartLoading();
 
