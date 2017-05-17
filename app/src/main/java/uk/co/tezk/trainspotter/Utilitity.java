@@ -67,10 +67,10 @@ public class Utilitity {
     }
 
 
-    private File createImageFile(Context context) throws IOException {
+    public static File createImageFile(Context context) throws IOException {
         // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "JPEG_" + timeStamp + "_";
+        String imageFileName = "TrainSpot_" + timeStamp;
         File storageDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
         File image = File.createTempFile(
                 imageFileName,  /* prefix */

@@ -60,7 +60,14 @@ public class Constant {
     public static final String FRAG_TAG_DATE_PICKER = "Date picker";
 
     public static final int REQUEST_IMAGE_CAPTURE = 66;
+    public static final int REQUEST_IMAGE_CAPTURE_FROM_SPOT = 68;
     public static final int PICK_IMAGE_FROM_GALLERY = 67;
 
+    public static final String TAKE_PHOTO = "TAKE PHOTO";
 
+    //keys for onInstanceSave of map
+    public static final String MAP_VIEW_PARCELABLE_KEY = "MAP_PARCELABLE";
+    public static final String ENGINE_NUMBER_KEY = "ENGINE_NO";
+    public static final String DATE_RECORDED_KEY = "DATE";
+    public static final String IMAGES_KEY = "IMAGES";
 }

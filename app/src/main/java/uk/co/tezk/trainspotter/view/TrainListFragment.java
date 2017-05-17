@@ -42,6 +42,8 @@ public class TrainListFragment extends Fragment implements
     List <TrainListItem> mTrainList;
     private String showTrainsForClass;
 
+    private boolean forcePortrait;
+
     @BindView(R.id.trainListRecyclerView) RecyclerView trainListRecyclerView;
 
     public String getShowTrainsForClass() {
@@ -58,17 +60,25 @@ public class TrainListFragment extends Fragment implements
         mTrainList = new ArrayList();
     }
 
+    public void forcePortrait() {
+        // As we use different layouts, call this to force loading of a portrait layout
+        forcePortrait = true;
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        presenter = new TrainListPresenterImpl();
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
+        presenter.bind(this);
        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_train_list, container, false);
+        int layout = forcePortrait?R.layout.fragment_train_list_subfragment:R.layout.fragment_train_list;
+        return inflater.inflate(layout, container, false);
     }
 
     @Override
@@ -78,11 +88,16 @@ public class TrainListFragment extends Fragment implements
         ButterKnife.bind(this, view);
         trainListRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         Log.i("TLF", "Get trains for "+showTrainsForClass);
+
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        presenter.unbind();
     }
 
     public void reloadTrainList() {
-        presenter = new TrainListPresenterImpl();
-        presenter.bind(this);
         if (mTrainList.size()==0) {
             if (showTrainsForClass==null || showTrainsForClass.equals("0")) {
                 return;
@@ -117,14 +132,17 @@ public class TrainListFragment extends Fragment implements
             throw new RuntimeException(context.toString()
                     + " must implement OnTrainListFragmentInteractionListener");
         }
+
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
         mListener = null;
-        presenter.unbind();
+
     }
+
+
 
     @Override
     public void showTrainList(List<TrainDetail> trainList) {

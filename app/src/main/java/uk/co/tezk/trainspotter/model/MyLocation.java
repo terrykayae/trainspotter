@@ -56,10 +56,7 @@ public class MyLocation implements GoogleApiClient.ConnectionCallbacks,
             if (mLastLocation != null) {
                 //          mLatitudeText.setText(String.valueOf(mLastLocation.getLatitude()));
                 //         mLongitudeText.setText(String.valueOf(mLastLocation.getLongitude()));
-                Log.i("ML", "Location received : " + mLastLocation.getLatitude() + ", " + mLastLocation.getLongitude());
                 getLocation();
-            } else {
-                Log.e("ML", "Couldn't find location");
             }
         } catch (SecurityException e) {
             e.printStackTrace();
@@ -94,9 +91,6 @@ public class MyLocation implements GoogleApiClient.ConnectionCallbacks,
 
     @Override
     public void getLocation() {
-        Log.i("ML", "getLocation() called");
-        Log.i("ML", "loc = " + (mLastLocation == null ? "null" : mLastLocation));
-        Log.i("ML", "view = " + (iView == null ? "null" : iView));
         if (mLastLocation != null && iView != null)
             iView.updatePosition(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()));
     }

@@ -25,7 +25,7 @@ import uk.co.tezk.trainspotter.model.TrainListItem;
 
 public class TrainListRecyclerViewAdapter extends RecyclerView.Adapter <TrainListRecyclerViewAdapter.TrainViewHolder> {
     // Interface for Fragment to implement to listen for clicks
-    interface OnTrainListItemClickListener {
+    public interface OnTrainListItemClickListener {
         void onItemClick(String classId, String trainNum, boolean longClick);
     }
     OnTrainListItemClickListener clickListener;

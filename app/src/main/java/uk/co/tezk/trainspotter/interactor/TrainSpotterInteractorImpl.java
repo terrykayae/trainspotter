@@ -33,6 +33,7 @@ public class TrainSpotterInteractorImpl implements ITrainSpotterInteractor {
         // Fetch then cache the numbers
         Observable<ClassNumbers> classNumbers = retrofit.getClassNumbers();
         ApiCache.getInstance().cacheClassList(classNumbers);
+        ApiCache.getInstance().unsubscribe();
         return classNumbers;
     }
 
@@ -40,6 +41,7 @@ public class TrainSpotterInteractorImpl implements ITrainSpotterInteractor {
     public Observable<List<TrainListItem>> getTrains(String classNumber) {
         Observable<List<TrainListItem>> trains = retrofit.getTrains(classNumber);
         ApiCache.getInstance().cacheTrainList(trains);
+        ApiCache.getInstance().unsubscribe();
         return trains;
     }
 

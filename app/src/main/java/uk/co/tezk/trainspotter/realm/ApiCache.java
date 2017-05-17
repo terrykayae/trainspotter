@@ -130,7 +130,7 @@ public class ApiCache {
                 }));
     }
 
-    public void unbind() {
+    public void unsubscribe() {
         if (compositeSubscription != null && compositeSubscription.hasSubscriptions())
             compositeSubscription.unsubscribe();
     }

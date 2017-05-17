@@ -54,8 +54,8 @@ public class ClassListFragment extends Fragment implements IClassListPresenter.I
         progressDialog = new Dialog(getActivity());
         progressDialog.setTitle("Getting data, please wait");
 
-        presenter = new ClassListPresenterImpl();
-        presenter.bind(this);
+
+
     }
 
     @Override
@@ -69,6 +69,8 @@ public class ClassListFragment extends Fragment implements IClassListPresenter.I
         Context context = view.getContext();
         recyclerView.setLayoutManager(new LinearLayoutManager(context));
         // Fetch the data
+        presenter = new ClassListPresenterImpl();
+        presenter.bind(this);
         presenter.retrieveData();
         return view;
     }
@@ -91,8 +93,9 @@ public class ClassListFragment extends Fragment implements IClassListPresenter.I
     public void onDestroyView() {
         Log.i("CLF", "onDestroyView");
         super.onDestroyView();
+        presenter.unbind();
      //   mListener = null;
-      //  presenter.unbind();
+
     }
 
     @Override

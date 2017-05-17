@@ -108,6 +108,8 @@ public class TrainDetailFragment extends Fragment implements
         View view = inflater.inflate(R.layout.fragment_train_detail, container, false);
         // Butter knife bindings
         ButterKnife.bind(this, view);
+
+        presenter.bind(this);
         return view;
     }
 
@@ -132,7 +134,7 @@ public class TrainDetailFragment extends Fragment implements
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        presenter.bind(this);
+
         if (currentTrain!=null)
             presenter.retrieveData(currentTrain.getTrain().getClass_(), currentTrain.getTrain().getNumber());
 
@@ -163,6 +165,12 @@ public class TrainDetailFragment extends Fragment implements
         mListener = null;
         //Hide the map!
         Log.i("TDF", "onDetach");
+
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
         presenter.unbind();
     }
 

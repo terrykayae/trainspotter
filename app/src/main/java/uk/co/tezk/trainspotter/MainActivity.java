@@ -35,6 +35,7 @@ import io.realm.Realm;
 import uk.co.tezk.trainspotter.model.Constant;
 import uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION;
 import uk.co.tezk.trainspotter.model.TrainDetail;
+import uk.co.tezk.trainspotter.parcel.MapViewParcelable;
 import uk.co.tezk.trainspotter.view.ClassListFragment;
 import uk.co.tezk.trainspotter.view.LogSpotFragment;
 import uk.co.tezk.trainspotter.view.TrainDetailFragment;
@@ -53,6 +54,7 @@ import static uk.co.tezk.trainspotter.model.Constant.MY_PERMISSIONS_REQUEST_LOCA
 import static uk.co.tezk.trainspotter.model.Constant.MY_PERMISSIONS_REQUEST_LOCATION_FROM_SPOT;
 import static uk.co.tezk.trainspotter.model.Constant.PICK_IMAGE_FROM_GALLERY;
 import static uk.co.tezk.trainspotter.model.Constant.REQUEST_IMAGE_CAPTURE;
+import static uk.co.tezk.trainspotter.model.Constant.REQUEST_IMAGE_CAPTURE_FROM_SPOT;
 import static uk.co.tezk.trainspotter.model.Constant.SHOW_CLASS;
 import static uk.co.tezk.trainspotter.model.Constant.SHOW_ENGINE;
 
@@ -60,7 +62,6 @@ public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
         ClassListFragment.OnClassListFragmentInteractionListener,
         TrainListFragment.OnTrainListFragmentInteractionListener,
-        LogSpotFragment.OnFragmentInteractionListener,
         TrainDetailFragment.OnTrainDetailFragmentInteractionListener
 
 {
@@ -76,7 +77,7 @@ public class MainActivity extends AppCompatActivity
     private boolean landscape;
     private boolean tablet;
 
-    Fragment fragment;
+    private static Fragment fragment;
     // If we're loading two fragments, this is what and where for the second
     Fragment secondFragment;
 
@@ -114,6 +115,8 @@ public class MainActivity extends AppCompatActivity
                 }
             }
         }
+        MapViewParcelable mapSettings;
+
     }
 
     @Override
@@ -194,7 +197,7 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.nav_gallery) {
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("image/*");
-          //  startActivityForResult(intent, PICK_IMAGE_FROM_GALLERY);
+            startActivityForResult(intent, PICK_IMAGE_FROM_GALLERY);
         } else if (id == R.id.nav_slideshow) {
 
         } else if (id == R.id.nav_manage) {
@@ -226,8 +229,10 @@ public class MainActivity extends AppCompatActivity
 
 
     private void loadFragment(CURRENT_ACTION action, boolean addToBackStack, Map<String, String> params) {
-        //Reset the fragment holders
-        fragment = null;
+        //Reset the fragment holder
+        //fragment = null;
+        Log.i("MA", "Loading fragment " + action + " with addToBackStack " + addToBackStack);
+        Log.i("MA", "fragment = "+fragment+", currentAction = "+currentAction);
         secondFragment = null;
         int secondViewId = 0;
         // Check for multi fragment layout
@@ -239,32 +244,35 @@ public class MainActivity extends AppCompatActivity
 
         // TODO : Find more elegant way of finding whether we're tablet
 
-        Log.i("MA", "Loading fragment " + action + " with addToBackStack " + addToBackStack);
+
         //setFabSpot();
 
         switch (action) {
             case CLASS_LIST:
-                // If main fragment is already ClassListFragment, don't load again (Happens when Landscape and a class is clicked)
                 fragment = new ClassListFragment();
-
                 if (landscape) {
                     // We're landscape so need to load train list as well
                     secondViewId = R.id.trainListFragmentHolder;
                     TrainListFragment mTrainlistFragment = new TrainListFragment();
+                    mTrainlistFragment.forcePortrait();
                     String classToShow = (params == null ? "1" : params.get(Constant.SHOW_CLASS));
                     Log.i("MA", "loadFragment, showing class " + classToShow);
                     mTrainlistFragment.setShowTrainsForClass(classToShow);
+
                     secondFragment = mTrainlistFragment;
                 }
 
                 break;
             case LOG_SPOT:
                 setFabSave();
-                fragment = new LogSpotFragment();
-                if (params != null) {
-                    ((LogSpotFragment) fragment).setTrainClass(params.get(Constant.CLASS_NUM_KEY));
-                    ((LogSpotFragment) fragment).setTrainNum(params.get(Constant.TRAIN_NUM_KEY));
-                }
+                // Only load a new fragment if we're not restoring a LogSpotFragment - only layout changes, not configuration of panels
+                if (fragment == null || !(fragment instanceof LogSpotFragment)) {
+                    fragment = new LogSpotFragment();
+                    if (params != null) {
+                        ((LogSpotFragment) fragment).setTrainClass(params.get(Constant.CLASS_NUM_KEY));
+                        ((LogSpotFragment) fragment).setTrainNum(params.get(Constant.TRAIN_NUM_KEY));
+                    }
+                } else return;
                 break;
             case TRAIN_LIST:
                 TrainListFragment mTrainListFragment = new TrainListFragment();
@@ -361,11 +369,6 @@ public class MainActivity extends AppCompatActivity
         }
         Log.i("MA", "display trains in class " + classNum);
         //View view = findViewById(R.id.trainListFragmentHolder);
-    }
-
-    @Override // onSpotLog interaction
-    public void onFragmentInteraction(Uri uri) {
-
     }
 
     // Helper methods to alter the behaviour of the FAB
@@ -467,7 +470,7 @@ public class MainActivity extends AppCompatActivity
                 switch (requestCode) {
                     case MY_PERMISSIONS_REQUEST_LOCATION_FROM_SPOT: {
                         if (fragment instanceof LogSpotFragment) {
-                            ((LogSpotFragment) fragment).getGoogleMap().setMyLocationEnabled(true);
+                            ((LogSpotFragment) fragment).getmGoogleMap().setMyLocationEnabled(true);
                         }
                     }
                     break;
@@ -487,7 +490,13 @@ public class MainActivity extends AppCompatActivity
     // Camera callback
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+        if (requestCode == REQUEST_IMAGE_CAPTURE_FROM_SPOT && resultCode == RESULT_OK) {
+            if (fragment instanceof LogSpotFragment) {
+        //        Drawable drawable = new BitmapDrawable(getResources(), (Bitmap)data.getExtras().get("data"));
+        //        ((LogSpotFragment)fragment).onNewImage(drawable);
+                ((LogSpotFragment)fragment).onImageReady();
+            }
+        } else if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
             Bundle extras = data.getExtras();
             Bitmap imageBitmap = (Bitmap) extras.get("data");
             //mImageView.setImageBitmap(imageBitmap);
