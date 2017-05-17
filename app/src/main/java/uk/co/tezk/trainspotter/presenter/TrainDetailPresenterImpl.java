@@ -1,13 +1,15 @@
 package uk.co.tezk.trainspotter.presenter;
 
+import javax.inject.Inject;
+
 import rx.Observer;
 import rx.Scheduler;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
+import rx.subscriptions.CompositeSubscription;
+import uk.co.tezk.trainspotter.TrainSpotterApplication;
 import uk.co.tezk.trainspotter.interactor.ITrainSpotterInteractor;
-import uk.co.tezk.trainspotter.interactor.TrainSpotterInteractorImpl;
 import uk.co.tezk.trainspotter.model.TrainDetail;
-import uk.co.tezk.trainspotter.network.NetworkModule;
 
 /**
  * Created by tezk on 12/05/17.
@@ -17,21 +19,20 @@ public class TrainDetailPresenterImpl implements ITrainDetailPresenter.IPresente
     private static TrainDetailPresenterImpl presenter;
 
     ITrainDetailPresenter.IView view;
+    @Inject
     ITrainSpotterInteractor interactor;
     Scheduler observeScheduler;
     Scheduler subscribeScheduler;
 
-    // Singleton pattern, shouldn't need if using Dagger injection
-
-    public static TrainDetailPresenterImpl getInstance() {
-        if (presenter == null) {
-            NetworkModule net = new NetworkModule();
-            presenter = new TrainDetailPresenterImpl(new TrainSpotterInteractorImpl(new NetworkModule().provideApi(net.provideRetrofit(net.provideOkHttpclient(net.provideInterceptor())))));
-        }
-        return presenter;
-    }
+    CompositeSubscription compositeSubscription = new CompositeSubscription();
 
     // Various constructors to aid in testing
+    public TrainDetailPresenterImpl() {
+        // Dagger inject for interactor
+        TrainSpotterApplication.getApplication().getTrainSpotterInteractorComponent().inject(this);
+        observeScheduler = AndroidSchedulers.mainThread();
+        subscribeScheduler = Schedulers.io();
+    }
 
     public TrainDetailPresenterImpl(ITrainSpotterInteractor interactor) {
         this(interactor, AndroidSchedulers.mainThread(), Schedulers.io());
@@ -51,12 +52,14 @@ public class TrainDetailPresenterImpl implements ITrainDetailPresenter.IPresente
     @Override
     public void unbind() {
         this.view = null;
+        if (compositeSubscription!=null && compositeSubscription.hasSubscriptions())
+            compositeSubscription.unsubscribe();
     }
 
     @Override
     public void retrieveData(String classNum, String engineNum) {
         view.onStartLoading();
-        interactor.getTrainDetails(classNum, engineNum)
+        compositeSubscription.add(interactor.getTrainDetails(classNum, engineNum)
                 .observeOn(observeScheduler)
                 .subscribeOn(subscribeScheduler)
                 .subscribe(new Observer<TrainDetail>() {
@@ -74,6 +77,6 @@ public class TrainDetailPresenterImpl implements ITrainDetailPresenter.IPresente
                     public void onNext(TrainDetail trainDetail) {
                         view.showTrainDetails(trainDetail);
                     }
-                });
+                }));
     }
 }

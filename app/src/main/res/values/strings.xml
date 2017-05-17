@@ -26,4 +26,7 @@
     <string name="title_activity_maps">Map</string>
     <string name="last_spotted">Last spotted :</string>
     <string name="where">Where :</string>
+    <string name="last_seen">Last seen :</string>
+    <string name="map_loading_please_wait">Map loading, please wait</string>
+    <string name="none_reported">None reported</string>
 </resources>

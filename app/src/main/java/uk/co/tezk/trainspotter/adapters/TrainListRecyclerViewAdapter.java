@@ -1,4 +1,4 @@
-package uk.co.tezk.trainspotter.view;
+package uk.co.tezk.trainspotter.adapters;
 
 import android.content.Context;
 import android.os.Build;
@@ -48,7 +48,7 @@ public class TrainListRecyclerViewAdapter extends RecyclerView.Adapter <TrainLis
 
     @Override
     public void onBindViewHolder(final TrainViewHolder holder, int position) {
-        TrainListItem trainListItem = trainList.get(position).getTrain();
+        final TrainListItem trainListItem = trainList.get(position).getTrain();
         List <SightingDetails> sightings = trainList.get(position).getSightings();
         if (sightings == null || sightings.size()==0) {
             // No sightings yet reported, hide the last sighting text views
@@ -83,17 +83,18 @@ public class TrainListRecyclerViewAdapter extends RecyclerView.Adapter <TrainLis
         holder.tvTrainName.setText(trainListItem.getName());
         holder.tvTrainDepot.setText(trainListItem.getDepot());
         holder.tvTrainLivery.setText(trainListItem.getLivery());
+        holder.trainListItem = trainListItem;
 
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (clickListener!=null) {
-                    clickListener.onItemClick(holder.trainListItem.getClass_(), holder.trainListItem.getNumber(), false);
+                    clickListener.onItemClick(trainListItem.getClass_(), trainListItem.getNumber(), false);
                 }
             }
         });
 
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
+        holder.ivTrainSighting.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Toast.makeText(context, "Adding log", Toast.LENGTH_SHORT).show();

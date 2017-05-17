@@ -1,4 +1,4 @@
-package uk.co.tezk.trainspotter.view;
+package uk.co.tezk.trainspotter.adapters;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;

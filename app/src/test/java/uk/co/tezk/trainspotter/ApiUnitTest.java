@@ -8,7 +8,7 @@ import javax.inject.Inject;
 import rx.Observable;
 import uk.co.tezk.trainspotter.model.ClassNumbers;
 import uk.co.tezk.trainspotter.network.ITrainSpottingRetrofit;
-import uk.co.tezk.trainspotter.network.NetworkModule;
+import uk.co.tezk.trainspotter.injection.NetworkModule;
 
 import static junit.framework.Assert.assertNotNull;
 

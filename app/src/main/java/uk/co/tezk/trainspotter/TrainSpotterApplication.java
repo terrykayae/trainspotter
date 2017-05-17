@@ -8,11 +8,13 @@ import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmMigration;
 import io.realm.RealmSchema;
-import uk.co.tezk.trainspotter.interactor.DaggerTrainSpotterInteractorComponent;
-import uk.co.tezk.trainspotter.interactor.TrainSpotterInteractorComponent;
-import uk.co.tezk.trainspotter.interactor.TrainSpotterInteractorModule;
-import uk.co.tezk.trainspotter.network.DaggerNetworkComponent;
-import uk.co.tezk.trainspotter.network.NetworkComponent;
+import uk.co.tezk.trainspotter.injection.DaggerLocationComponent;
+import uk.co.tezk.trainspotter.injection.DaggerNetworkComponent;
+import uk.co.tezk.trainspotter.injection.DaggerTrainSpotterInteractorComponent;
+import uk.co.tezk.trainspotter.injection.LocationComponent;
+import uk.co.tezk.trainspotter.injection.NetworkComponent;
+import uk.co.tezk.trainspotter.injection.TrainSpotterInteractorComponent;
+import uk.co.tezk.trainspotter.injection.TrainSpotterInteractorModule;
 
 //import uk.co.tezk.trainspotter.network.DaggerNetworkComponent;
 
@@ -25,6 +27,7 @@ public class TrainSpotterApplication extends Application {
     static TrainSpotterApplication application;
     NetworkComponent networkComponent;
     TrainSpotterInteractorComponent trainSpotterInteractorComponent;
+    LocationComponent locationComponent;
 
     @Override
     public void onCreate() {
@@ -37,6 +40,8 @@ public class TrainSpotterApplication extends Application {
                 .networkComponent(networkComponent)
                 .trainSpotterInteractorModule(new TrainSpotterInteractorModule())
                 .build();
+        locationComponent = DaggerLocationComponent.create();
+
         // Initialise Realm
         Realm.init(this);
         RealmConfiguration config = new RealmConfiguration.Builder().
@@ -70,5 +75,9 @@ public class TrainSpotterApplication extends Application {
 
     public TrainSpotterInteractorComponent getTrainSpotterInteractorComponent() {
         return trainSpotterInteractorComponent;
+    }
+
+    public LocationComponent getLocationComponent() {
+        return locationComponent;
     }
 }

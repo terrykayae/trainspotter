@@ -10,6 +10,7 @@ import rx.Observable;
 import rx.Observer;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
+import rx.subscriptions.CompositeSubscription;
 import uk.co.tezk.trainspotter.model.ClassDetails;
 import uk.co.tezk.trainspotter.model.ClassNumbers;
 import uk.co.tezk.trainspotter.model.TrainListItem;
@@ -21,7 +22,8 @@ import uk.co.tezk.trainspotter.model.TrainListItem;
 public class ApiCache {
     private static ApiCache apiCache;
     private Realm realm;
-    private Object lock = new Object();
+
+    CompositeSubscription compositeSubscription = new CompositeSubscription();
 
     public static synchronized ApiCache getInstance() {
         if (apiCache == null) {
@@ -31,68 +33,105 @@ public class ApiCache {
     }
 
     public void cacheClassList(Observable<ClassNumbers> classNumbersObservable) {
-        // Fetch Realm instance each call as we're not sure what thread we'll be called from
 
-        // TODO : this clears the Class list but is only called if the cached details aren't available. This should only be called once
-  /*      Realm.getDefaultInstance().executeTransaction(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                realm.delete(ClassDetails.class);
-            }
-        });*/
-        if (realm!=null) {
-            // Data is currently being persisted,
+        if (realm != null) {
+            // Data is currently being persisted, wait. Very messy. TODO: implement better soution
             do {
-                synchronized (lock) {
-                    Log.i("API", "Waiting for lock to be released");
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
-            } while (realm!=null);
+            } while (realm != null);
         }
 
-        synchronized (lock) {
-            classNumbersObservable
-                    .observeOn(Schedulers.io())
-                    .subscribeOn(Schedulers.io())
-                    .flatMap(new Func1<ClassNumbers, Observable<String>>() {
-                        @Override
-                        public Observable<String> call(ClassNumbers classNumbers) {
-                            return Observable.from(classNumbers.getClassNumbers());
-                        }
-                    })
-                    .subscribe(new Observer<String>() {
-                        @Override
-                        public void onCompleted() {
+        compositeSubscription.add(classNumbersObservable
+                .observeOn(Schedulers.io())
+                .subscribeOn(Schedulers.io())
+                .flatMap(new Func1<ClassNumbers, Observable<String>>() {
+                    @Override
+                    public Observable<String> call(ClassNumbers classNumbers) {
+                        return Observable.from(classNumbers.getClassNumbers());
+                    }
+                })
+                .subscribe(new Observer<String>() {
+                    @Override
+                    public void onCompleted() {
+                        realm = null;
+                    }
 
-                            realm = null;
-                            lock.notifyAll();
-                        }
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.i("ApiCache", "error " + e.getMessage());
+                        realm = null;
+                    }
 
-                        @Override
-                        public void onError(Throwable e) {
-                            Log.i("ApiCache", "error " + e.getMessage());
-                            realm = null;
-                          //  lock.notifyAll();
-                        }
-
-                        @Override
-                        public void onNext(String classNumber) {
-                            if (realm == null)
-                                realm = Realm.getDefaultInstance();
-                            final ClassDetails classDetails = new ClassDetails();
-                            classDetails.setClassId(classNumber);
-                            realm.executeTransaction(new Realm.Transaction() {
-                                @Override
-                                public void execute(Realm realm) {
-                                    realm.copyToRealm(classDetails);
-                                }
-                            });
-                        }
-                    });
-        }
+                    @Override
+                    public void onNext(String classNumber) {
+                        if (realm == null)
+                            realm = Realm.getDefaultInstance();
+                        final ClassDetails classDetails = new ClassDetails();
+                        classDetails.setClassId(classNumber);
+                        realm.executeTransaction(new Realm.Transaction() {
+                            @Override
+                            public void execute(Realm realm) {
+                                realm.copyToRealmOrUpdate(classDetails);
+                            }
+                        });
+                    }
+                }));
     }
 
-    public void cacheTrainList(Observable <List<TrainListItem>> trainsObservable) {
-        // Fetch Realm instance each call as we're not sure what thread we'll be called from
-        Realm realm = Realm.getDefaultInstance();
+    public void cacheTrainList(Observable<List<TrainListItem>> trainsObservable) {
+        if (realm != null) {
+            // Data is currently being persisted, wait. Very messy. TODO: implement better soution
+            do {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            } while (realm != null);
+        }
+        realm = null;
+        compositeSubscription.add(trainsObservable
+                .observeOn(Schedulers.io())
+                .subscribeOn(Schedulers.io())
+                .flatMap(new Func1<List<TrainListItem>, Observable<TrainListItem>>() {
+                    @Override
+                    public Observable<TrainListItem> call(List<TrainListItem> trainListItems) {
+                        return Observable.from(trainListItems);
+                    }
+                })
+                .subscribe(new Observer<TrainListItem>() {
+                    @Override
+                    public void onCompleted() {
+                        Log.i("API","save trains complete");
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.i("API","error "+e.getMessage());
+                        e.printStackTrace();
+                    }
+
+                    @Override
+                    public void onNext(final TrainListItem trainListItem) {
+                        if (realm == null)
+                            realm = Realm.getDefaultInstance();
+                        Log.i("API","Saving "+trainListItem);
+                        realm.executeTransaction(new Realm.Transaction() {
+                            @Override
+                            public void execute(Realm realm) {
+                                realm.copyToRealm(trainListItem);
+                            }
+                        });
+                    }
+                }));
+    }
+
+    public void unbind() {
+        if (compositeSubscription != null && compositeSubscription.hasSubscriptions())
+            compositeSubscription.unsubscribe();
     }
 }

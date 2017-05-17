@@ -16,95 +16,144 @@
             android:layout_margin="@dimen/fragment_margin">
 
             <TextView
-                android:id="@+id/tvTrainNumber"
+                android:id="@+id/tcClassLabel"
+                android:layout_gravity="right"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_column="0"
+                android:layout_marginBottom="8dp"
                 android:layout_row="0"
-                android:text="@string/number" />
+                android:text="Class :" />
 
-            <EditText
-                android:id="@+id/etTrainNumber"
+            <TextView
+                android:id="@+id/tvClass"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_column="1"
                 android:layout_row="0"
-                android:editable="false"
-                android:ems="10"
-                android:inputType="textPersonName" />
+                android:text="TextView" />
+
+            <TextView
+                android:id="@+id/tvTrainNumberLabel"
+                android:layout_gravity="right"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="2"
+                android:layout_row="0"
+                android:text="@string/number" />
+
+            <TextView
+                android:id="@+id/tvTrainNumber"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="3"
+                android:layout_row="0"
+                android:ems="10" />
+
+            <TextView
+                android:id="@+id/tvTrainNameLabel"
+                android:layout_gravity="right"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:layout_column="0"
+                android:layout_row="1"
+                android:text="@string/name" />
 
             <TextView
                 android:id="@+id/tvTrainName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_column="0"
-                android:layout_row="1"
-                android:text="@string/name" />
-
-            <EditText
-                android:id="@+id/etTrainName"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
                 android:layout_column="1"
                 android:layout_row="1"
-                android:editable="false"
-                android:ems="10"
-                android:inputType="textPersonName" />
+                android:ems="10" />
+
+            <TextView
+                android:id="@+id/tvTrainLiveryLabel"
+                android:layout_gravity="right"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="2"
+                android:layout_row="1"
+                android:text="@string/livery" />
 
             <TextView
                 android:id="@+id/tvTrainLivery"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_column="0"
-                android:layout_row="2"
-                android:text="@string/livery" />
+                android:layout_column="3"
+                android:layout_row="1"
+                android:ems="10"/>
 
-            <EditText
-                android:id="@+id/etTrainLivery"
+
+            <TextView
+                android:id="@+id/tvTrainOperatorLabel"
+                android:layout_gravity="right"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_column="1"
+                android:layout_marginBottom="8dp"
+                android:layout_column="0"
                 android:layout_row="2"
-                android:editable="false"
-                android:ems="10"
-                android:inputType="textPersonName" />
-
+                android:text="@string/operator" />
 
             <TextView
                 android:id="@+id/tvTrainOperator"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_column="0"
-                android:layout_row="3"
-                android:text="@string/operator" />
+                android:layout_column="1"
+                android:layout_row="2"
+                android:ems="10" />
 
-            <EditText
-                android:id="@+id/etTrainOperator"
+            <TextView
+                android:id="@+id/tvTrainDepotLabel"
+                android:layout_gravity="right"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_column="1"
-                android:layout_row="3"
-                android:editable="false"
-                android:ems="10"
-                android:inputType="textPersonName" />
+                android:layout_column="2"
+                android:layout_row="2"
+                android:text="@string/depot" />
 
             <TextView
                 android:id="@+id/tvTrainDepot"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_column="0"
-                android:layout_row="4"
-                android:text="@string/depot" />
+                android:layout_column="3"
+                android:layout_row="2"
+                android:ems="10"/>
 
-            <EditText
-                android:id="@+id/etTrainDepot"
+            <TextView
+                android:id="@+id/tvTrainLastSpottedLabel"
+                android:layout_gravity="right"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="0"
+                android:layout_row="3"
+
+                android:text="@string/last_seen" />
+
+            <TextView
+                android:id="@+id/tvTrainLastSpotted"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_column="1"
-                android:layout_row="4"
-                android:editable="false"
-                android:ems="10"
-                android:inputType="textPersonName" />
+                android:layout_row="3"
+                android:ems="10"/>
+
+            <TextView
+                android:id="@+id/tvTrainWhereLabel"
+                android:layout_gravity="right"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="2"
+                android:layout_row="3"
+                android:text="@string/where" />
+            <TextView
+                android:id="@+id/tvTrainWhere"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="3"
+                android:layout_row="3"
+                android:ems="10"/>
         </GridLayout>
         <android.support.v7.widget.RecyclerView
             android:id="@+id/trainDetailImageRecyclerView"
@@ -114,15 +163,19 @@
             android:layout_marginLeft="@dimen/fragment_margin"
             android:layout_marginBottom="@dimen/fragment_margin"
             android:layout_height="80dp">
-
         </android.support.v7.widget.RecyclerView>
+
         <FrameLayout
             android:id="@+id/mapHolder"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
 
             android:layout_below="@+id/trainDetailImageRecyclerView">
-
+            <TextView
+                android:layout_gravity="center"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/map_loading_please_wait"/>
         </FrameLayout>
 
     </RelativeLayout>

@@ -14,7 +14,7 @@ import uk.co.tezk.trainspotter.model.SightingDetails;
 import static uk.co.tezk.trainspotter.model.Constant.API_KEY;
 
 /**
- * Class to deal with sending data to the servers
+ * Class to deal with sending data to the API server
  */
 
 public class Submitter {

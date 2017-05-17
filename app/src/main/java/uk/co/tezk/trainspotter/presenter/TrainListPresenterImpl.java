@@ -3,6 +3,8 @@ package uk.co.tezk.trainspotter.presenter;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.inject.Inject;
+
 import io.realm.RealmResults;
 import rx.Observable;
 import rx.Observer;
@@ -11,13 +13,12 @@ import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 import rx.subscriptions.CompositeSubscription;
+import uk.co.tezk.trainspotter.TrainSpotterApplication;
 import uk.co.tezk.trainspotter.interactor.ITrainSpotterInteractor;
 import uk.co.tezk.trainspotter.interactor.RealmTrainSpotterInteractorImpl;
-import uk.co.tezk.trainspotter.interactor.TrainSpotterInteractorImpl;
 import uk.co.tezk.trainspotter.model.SightingDetails;
 import uk.co.tezk.trainspotter.model.TrainDetail;
 import uk.co.tezk.trainspotter.model.TrainListItem;
-import uk.co.tezk.trainspotter.network.NetworkModule;
 import uk.co.tezk.trainspotter.realm.RealmHandler;
 
 import static rx.Observable.concat;
@@ -27,25 +28,22 @@ import static rx.Observable.concat;
  */
 
 public class TrainListPresenterImpl implements ITrainListPresenter.IPresenter {
-    private static TrainListPresenterImpl presenter;
     CompositeSubscription compositeSubscription = new CompositeSubscription();
 
     ITrainListPresenter.IView view;
+    @Inject
     ITrainSpotterInteractor interactor;
     Scheduler observeScheduler;
     Scheduler subscribeScheduler;
-    private List <TrainDetail> trainDetailList;
+    private List<TrainDetail> trainDetailList;
     // Caching interactor, accesses Realm database instead of API
     ITrainSpotterInteractor cachedInteractor;
 
-    // Singleton pattern, shouldn't need if using Dagger injection
-
-    public static TrainListPresenterImpl getInstance() {
-        if (presenter == null) {
-            NetworkModule net = new NetworkModule();
-            presenter = new TrainListPresenterImpl(new TrainSpotterInteractorImpl(new NetworkModule().provideApi(net.provideRetrofit(net.provideOkHttpclient(net.provideInterceptor())))));
-        }
-        return presenter;
+    public TrainListPresenterImpl() {
+        TrainSpotterApplication.getApplication().getTrainSpotterInteractorComponent().inject(this);
+        observeScheduler = AndroidSchedulers.mainThread();
+        subscribeScheduler = Schedulers.io();
+        cachedInteractor = new RealmTrainSpotterInteractorImpl();
     }
 
     // Various constructors to aid in testing
@@ -74,7 +72,6 @@ public class TrainListPresenterImpl implements ITrainListPresenter.IPresenter {
     }
 
 
-
     @Override
     public void retrieveData(String classNumber) {
         //TODO :Not thread safe due to global list used
@@ -85,7 +82,7 @@ public class TrainListPresenterImpl implements ITrainListPresenter.IPresenter {
         // Details
         // TODO : Change the realm here to use a mockable object
         compositeSubscription.add(concat(cachedInteractor.getTrains(classNumber), interactor.getTrains(classNumber))
-                .take(1)
+                .first()
                 .observeOn(observeScheduler)
                 .subscribeOn(subscribeScheduler)
                 .flatMap(new Func1<List<TrainListItem>, Observable<TrainListItem>>() {

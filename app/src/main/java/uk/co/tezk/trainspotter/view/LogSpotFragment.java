@@ -5,6 +5,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,50 +17,85 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.codetroopers.betterpickers.calendardatepicker.CalendarDatePickerDialogFragment;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
+import javax.inject.Inject;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import uk.co.tezk.trainspotter.MainActivity;
 import uk.co.tezk.trainspotter.R;
+import uk.co.tezk.trainspotter.TrainSpotterApplication;
+import uk.co.tezk.trainspotter.Utilitity;
+import uk.co.tezk.trainspotter.model.MyLocation;
 import uk.co.tezk.trainspotter.model.SightingDetails;
 import uk.co.tezk.trainspotter.network.Submitter;
+import uk.co.tezk.trainspotter.presenter.ILocationUpdatePresenter;
 import uk.co.tezk.trainspotter.realm.RealmHandler;
 
 import static uk.co.tezk.trainspotter.model.Constant.FRAG_TAG_DATE_PICKER;
+import static uk.co.tezk.trainspotter.model.Constant.MY_PERMISSIONS_REQUEST_LOCATION_FROM_SPOT;
 
 /**
  * A simple {@link Fragment} subclass.
  * Activities that contain this fragment must implement the
  * {@link LogSpotFragment.OnFragmentInteractionListener} interface
  * to handle interaction events.
- * Use the {@link LogSpotFragment#newInstance} factory method to
- * create an instance of this fragment.
  */
-public class LogSpotFragment extends Fragment implements OnMapReadyCallback {
-
+public class LogSpotFragment extends Fragment implements
+        OnMapReadyCallback,
+        ILocationUpdatePresenter.IView {
+    private Context context;
     private OnFragmentInteractionListener mListener;
 
+    SupportMapFragment mSupportMapFragment;
     private GoogleMap googleMap;
+
+    @Inject MyLocation locationPresenter;
+
+    // Include getter for googlemap so mainActivity can enable location if needed after permission check
+    public GoogleMap getGoogleMap() { return googleMap; }
 
     public LogSpotFragment() {
         // Required empty public constructor
     }
 
     // The view items
-    @BindView(R.id.etTrainId) EditText etTrainId;
-    @BindView(R.id.tvDate) TextView tvDate;
-    @BindView(R.id.mapHolder) FrameLayout mapHolder;
+    @BindView(R.id.etTrainId)
+    EditText etTrainId;
+    @BindView(R.id.tvDate)
+    TextView tvDate;
+    @BindView(R.id.mapHolder)
+    FrameLayout mapHolder;
+
+    // Holder for the location, if we're allowed to fetch
+    LatLng mLatLng;
+
+    String trainClass;
+    String trainNum;
+
+    public void setTrainClass(String trainClass) {
+        this.trainClass = trainClass;
+    }
+
+    public void setTrainNum(String trainNum) {
+        this.trainNum = trainNum;
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        // Initiate Dagger injections
+        TrainSpotterApplication.getApplication().getLocationComponent().inject(this);
     }
 
     @Override
@@ -66,11 +103,6 @@ public class LogSpotFragment extends Fragment implements OnMapReadyCallback {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_log_spot, container, false);
-
-        //  SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager()
-        //          .findFragmentById(R.id.mapHolder);
-        //  ((LogSpotFragment)mapFragment).setMapFragment(mapFragment);
-
         return view;
     }
 
@@ -81,41 +113,72 @@ public class LogSpotFragment extends Fragment implements OnMapReadyCallback {
         ButterKnife.bind(this, view);
         // Set the date textview to today's date
         tvDate.setText(new SimpleDateFormat("dd/MM/yyyy").format(new Date()));
-    }
 
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
+        //Ask for our location
+        locationPresenter.bind(this);
+        locationPresenter.getLocation();
+        if (trainNum!=null) {
+            etTrainId.setText(trainNum);
         }
     }
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+        this.context = context;
         if (context instanceof OnFragmentInteractionListener) {
             mListener = (OnFragmentInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
-                    + " must implement OnTrainListFragmentInteractionListener");
+                    + " must implement OnFragmentInteractionListener");
         }
+
+        FragmentManager fragmentManager = ((MainActivity) context).getSupportFragmentManager();
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        mSupportMapFragment = SupportMapFragment.newInstance();
+        transaction.replace(R.id.mapHolder, mSupportMapFragment);
+        mSupportMapFragment.getMapAsync(this);
+        transaction.commit();
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
         mListener = null;
-        if (googleMap != null) {
-            googleMap.clear();
+        FragmentManager fragmentManager = ((MainActivity) context).getSupportFragmentManager();
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
 
-        }
-        mapHolder.setVisibility(View.GONE);
+        transaction.detach(mSupportMapFragment);
+        // transaction.detach(this);
+
+        transaction.commit();
     }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         this.googleMap = googleMap;
         Log.i("LSF", "Got map");
+        // Enable the setMyLocation
+        try {
+            if (Utilitity.checkLocationPermissions(context, MY_PERMISSIONS_REQUEST_LOCATION_FROM_SPOT)) {
+                googleMap.setMyLocationEnabled(true);
+                if (mLatLng != null) {
+                    googleMap.moveCamera(CameraUpdateFactory.newLatLng(mLatLng));
+                }
+            }
+        } catch (SecurityException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Called by the location presenter to provide our lat and long
+    @Override
+    public void updatePosition(LatLng latLng) {
+        if (mLatLng == null && googleMap != null) {
+            googleMap.moveCamera(CameraUpdateFactory.zoomTo(14f));
+            googleMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+        }
+        this.mLatLng = latLng;
     }
 
     /**
@@ -136,8 +199,8 @@ public class LogSpotFragment extends Fragment implements OnMapReadyCallback {
 
     public void handleSave() {
         // Called when FAB is pressed in main activity and we're active
-        if (tvDate.getText().length()==0 || etTrainId.getText().length()==0) {
-            Toast.makeText(getContext(), "Fields where blank!\nNot saving", Toast.LENGTH_SHORT).show();
+        if (tvDate.getText().length() == 0 || etTrainId.getText().length() == 0) {
+            Toast.makeText(getContext(), "Fields were blank!\nNot saving", Toast.LENGTH_LONG).show();
             return;
         }
         // TODO : Save location as well
@@ -145,7 +208,12 @@ public class LogSpotFragment extends Fragment implements OnMapReadyCallback {
         SightingDetails sightingDetails = new SightingDetails();
         sightingDetails.setTrainId(etTrainId.getText().toString());
         sightingDetails.setDate(tvDate.getText().toString());
-        //sightingDetails.set
+        // We received a location, or one was set by user
+        if (mLatLng!=null) {
+            sightingDetails.setLat((float)mLatLng.latitude);
+            sightingDetails.setLon((float)mLatLng.longitude);
+
+        }
         // Store in the DB
         RealmHandler.getInstance().persistSightingDetails(sightingDetails);
         // Send to the server
@@ -158,15 +226,10 @@ public class LogSpotFragment extends Fragment implements OnMapReadyCallback {
                 .setOnDateSetListener(new CalendarDatePickerDialogFragment.OnDateSetListener() {
                     @Override
                     public void onDateSet(CalendarDatePickerDialogFragment dialog, int year, int monthOfYear, int dayOfMonth) {
-                        tvDate.setText(dayOfMonth+"/"+(monthOfYear+1)+"/"+year);
+                        tvDate.setText(dayOfMonth + "/" + (monthOfYear + 1) + "/" + year);
                     }
                 })
                 .setFirstDayOfWeek(Calendar.SUNDAY);
-                //.setPreselectedDate(towDaysAgo.getYear(), towDaysAgo.getMonthOfYear() - 1, towDaysAgo.getDayOfMonth())
-                //.setDateRange(minDate, null)
-                //.setDoneText("Yay")
-                //.setCancelText("Nop")
-                //.setThemeDark(true);
         cdp.show(getActivity().getSupportFragmentManager(), FRAG_TAG_DATE_PICKER);
     }
 }

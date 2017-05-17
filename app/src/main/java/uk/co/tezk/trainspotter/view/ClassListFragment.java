@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.co.tezk.trainspotter.R;
+import uk.co.tezk.trainspotter.adapters.ClassListRecyclerViewAdapter;
 import uk.co.tezk.trainspotter.model.ClassDetails;
 import uk.co.tezk.trainspotter.presenter.ClassListPresenterImpl;
 import uk.co.tezk.trainspotter.presenter.IClassListPresenter;
@@ -53,7 +54,7 @@ public class ClassListFragment extends Fragment implements IClassListPresenter.I
         progressDialog = new Dialog(getActivity());
         progressDialog.setTitle("Getting data, please wait");
 
-        presenter = ClassListPresenterImpl.getInstance();
+        presenter = new ClassListPresenterImpl();
         presenter.bind(this);
     }
 
@@ -67,6 +68,7 @@ public class ClassListFragment extends Fragment implements IClassListPresenter.I
         // Set the adapter
         Context context = view.getContext();
         recyclerView.setLayoutManager(new LinearLayoutManager(context));
+        // Fetch the data
         presenter.retrieveData();
         return view;
     }
@@ -75,23 +77,34 @@ public class ClassListFragment extends Fragment implements IClassListPresenter.I
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+        Log.i("CLF","onAttach");
         if (context instanceof OnClassListFragmentInteractionListener) {
             mListener = (OnClassListFragmentInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
                     + " must implement OnClassListFragmentInteractionListener");
         }
+
+    }
+
+    @Override
+    public void onDestroyView() {
+        Log.i("CLF", "onDestroyView");
+        super.onDestroyView();
+     //   mListener = null;
+      //  presenter.unbind();
     }
 
     @Override
     public void onDetach() {
+        Log.i("CLF","onDetach");
         super.onDetach();
-        mListener = null;
-        presenter.unbind();
+
     }
 
     @Override
     public void onStartLoading() {
+        Log.i("CLF","onStartLoading");
         //progressDialog.show();
     }
 
@@ -103,6 +116,7 @@ public class ClassListFragment extends Fragment implements IClassListPresenter.I
 
     @Override
     public void onCompletedLoading() {
+        Log.i("CLF", "onCompletedLoading");
         progressDialog.dismiss();
     }
 

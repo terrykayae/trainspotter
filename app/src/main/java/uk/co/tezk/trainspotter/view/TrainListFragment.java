@@ -19,6 +19,7 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import uk.co.tezk.trainspotter.R;
+import uk.co.tezk.trainspotter.adapters.TrainListRecyclerViewAdapter;
 import uk.co.tezk.trainspotter.model.TrainDetail;
 import uk.co.tezk.trainspotter.model.TrainListItem;
 import uk.co.tezk.trainspotter.presenter.ITrainListPresenter;
@@ -80,7 +81,7 @@ public class TrainListFragment extends Fragment implements
     }
 
     public void reloadTrainList() {
-        presenter = TrainListPresenterImpl.getInstance();
+        presenter = new TrainListPresenterImpl();
         presenter.bind(this);
         if (mTrainList.size()==0) {
             if (showTrainsForClass==null || showTrainsForClass.equals("0")) {

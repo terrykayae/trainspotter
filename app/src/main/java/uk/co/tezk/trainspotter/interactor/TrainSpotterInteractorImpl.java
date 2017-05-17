@@ -38,7 +38,9 @@ public class TrainSpotterInteractorImpl implements ITrainSpotterInteractor {
 
     @Override
     public Observable<List<TrainListItem>> getTrains(String classNumber) {
-        return retrofit.getTrains(classNumber);
+        Observable<List<TrainListItem>> trains = retrofit.getTrains(classNumber);
+        ApiCache.getInstance().cacheTrainList(trains);
+        return trains;
     }
 
     @Override

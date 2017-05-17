@@ -11,7 +11,6 @@ import uk.co.tezk.trainspotter.TrainSpotterApplication;
 import uk.co.tezk.trainspotter.interactor.ITrainSpotterInteractor;
 import uk.co.tezk.trainspotter.interactor.RealmTrainSpotterInteractorImpl;
 import uk.co.tezk.trainspotter.model.ClassNumbers;
-import uk.co.tezk.trainspotter.network.NetworkModule;
 
 import static rx.Observable.concat;
 
@@ -20,7 +19,6 @@ import static rx.Observable.concat;
  */
 
 public class ClassListPresenterImpl implements IClassListPresenter.IPresenter {
-    private static ClassListPresenterImpl presenter;
     CompositeSubscription compositeSubscription = new CompositeSubscription();
 
     IClassListPresenter.IView view;
@@ -32,18 +30,6 @@ public class ClassListPresenterImpl implements IClassListPresenter.IPresenter {
     ITrainSpotterInteractor interactor;
     // Caching interactor, accesses Realm database instead of API
     ITrainSpotterInteractor cachedInteractor;
-
-    // Implement Singelton implementation, shouldn't be needed when Dagger used
-
-    public static ClassListPresenterImpl getInstance() {
-        if (presenter == null) {
-            NetworkModule net = new NetworkModule();
-            //presenter = new ClassListPresenterImpl(new TrainSpotterInteractorImpl(new NetworkModule().provideApi(net.provideRetrofit(net.provideOkHttpclient(net.provideInterceptor())))));
-            // Use the Dagger injected constructor
-            presenter = new ClassListPresenterImpl();
-        }
-        return presenter;
-    }
 
     // Default constructor, uses Dagger injection for interactor
 

@@ -1,6 +1,8 @@
-package uk.co.tezk.trainspotter.network;
+package uk.co.tezk.trainspotter.injection;
 
 import dagger.Component;
+import uk.co.tezk.trainspotter.network.ITrainSpottingRetrofit;
+import uk.co.tezk.trainspotter.network.Submitter;
 
 /**
  * Create the injections

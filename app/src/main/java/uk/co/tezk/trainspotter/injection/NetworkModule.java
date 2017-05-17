@@ -1,4 +1,4 @@
-package uk.co.tezk.trainspotter.network;
+package uk.co.tezk.trainspotter.injection;
 
 import java.util.concurrent.TimeUnit;
 
@@ -9,6 +9,7 @@ import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
+import uk.co.tezk.trainspotter.network.ITrainSpottingRetrofit;
 
 import static uk.co.tezk.trainspotter.model.Constant.TRAIN_SPOTTING_BASE_URL;
 
