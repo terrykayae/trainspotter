@@ -21,6 +21,9 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import uk.co.tezk.trainspotter.MainActivity;
@@ -53,6 +56,8 @@ public class TrainDetailFragment extends Fragment implements
     @BindView(R.id.tvTrainWhere)TextView tvTrainWhere;
     // Holder for the map
    // @BindView(R.id.mapHolder) FrameLayout mMapHolder;
+    // Holder for our map markers
+    Map <String, Marker> markers;
 
     Context context;
     SupportMapFragment mSupportMapFragment;
@@ -141,10 +146,6 @@ public class TrainDetailFragment extends Fragment implements
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        Log.i("TDF", "currentTrain = "+currentTrain);
-        Log.i("TDF", "class "+currentTrain.getTrain().getClass_());
-        Log.i("TDF", "id "+currentTrain.getTrain().getNumber());
-
         if (currentTrain!=null)
             presenter.retrieveData(currentTrain.getTrain().getClass_(), currentTrain.getTrain().getNumber());
         // Load the map
@@ -194,8 +195,9 @@ public class TrainDetailFragment extends Fragment implements
     }
 
     public void addSightingsToMap() {
+        markers = new HashMap();
         if (currentTrain.getSightings() != null && currentTrain.getSightings().size() > 0) {
-            BitmapDescriptor flagIcon = BitmapDescriptorFactory.fromResource(R.drawable.filled_flag_xxl)
+            BitmapDescriptor flagIcon = BitmapDescriptorFactory.fromResource(R.drawable.green_flag);
             for (SightingDetails each : currentTrain.getSightings())  {
                 MarkerOptions markerOptions = new MarkerOptions()
                         .position(new LatLng(each.getLat(), each.getLon()))
@@ -203,7 +205,7 @@ public class TrainDetailFragment extends Fragment implements
                         .icon(flagIcon)
                         .anchor(0.2f, 1f);
 
-                Marker marker = mGoogleMap.addMarker(markerOptions);
+                markers.put(each.getTrainId(), mGoogleMap.addMarker(markerOptions));
             }
         }
     }
@@ -235,6 +237,9 @@ public class TrainDetailFragment extends Fragment implements
                 tvTrainWhere.setText(latestSighting.getLat()+", "+latestSighting.getLon());
             }
         }
+        // If the map was already loaded, add the markers
+        if (mGoogleMap!=null)
+            addSightingsToMap();
     }
 
     @Override

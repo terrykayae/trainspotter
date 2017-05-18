@@ -123,6 +123,7 @@ public class TrainListFragment extends Fragment implements
     }
 
     public void reloadTrainList() {
+        Log.i("TLF", "reloadTrainList : "+showTrainsForClass);
         if (mTrainList.size()==0) {
             if (showTrainsForClass==null || showTrainsForClass.equals("0")) {
                 return;
