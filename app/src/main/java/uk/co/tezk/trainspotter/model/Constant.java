@@ -52,6 +52,8 @@ public class Constant {
     // keys for attribute maps
     public static final int MY_PERMISSIONS_REQUEST_LOCATION_FROM_SPOT = 22;
     public static final int MY_PERMISSIONS_REQUEST_LOCATION_FROM_DETAILS = 23;
+    public static final int MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_MAIN = 24;
+    public static final int MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_SPOT = 25;
     public static final String SHOW_CLASS = "1";
     public static final String SHOW_ENGINE = "2";
     public static final String CLASS_NUM_KEY = "classkey";
@@ -59,7 +61,7 @@ public class Constant {
 
     public static final String FRAG_TAG_DATE_PICKER = "Date picker";
 
-    public static final int REQUEST_IMAGE_CAPTURE = 66;
+    public static final int REQUEST_IMAGE_CAPTURE_FROM_MAIN = 66;
     public static final int REQUEST_IMAGE_CAPTURE_FROM_SPOT = 68;
     public static final int PICK_IMAGE_FROM_GALLERY = 67;
 

@@ -15,6 +15,11 @@ import android.widget.TextView;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -83,9 +88,14 @@ public class TrainDetailFragment extends Fragment implements
         if (currentTrain == null) {
             currentTrain = new TrainDetail();
             TrainListItem trainListItem = new TrainListItem();
+            currentTrain.setTrain(trainListItem);
         }
         currentTrain.getTrain().setClass_(classNumber);
         currentTrain.getTrain().setNumber(trainNumber);
+
+        Log.i("TDF", "setting currentTrain = "+currentTrain);
+        Log.i("TDF", "class "+currentTrain.getTrain().getClass_());
+        Log.i("TDF", "id "+currentTrain.getTrain().getNumber());
     }
 
     @Override
@@ -125,19 +135,18 @@ public class TrainDetailFragment extends Fragment implements
             throw new RuntimeException(context.toString()
                     + " must implement OnFragmentInteractionListener");
         }
-        // Load the map!
-        Log.i("TDF", "onAttach");
-
     }
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        Log.i("TDF", "currentTrain = "+currentTrain);
+        Log.i("TDF", "class "+currentTrain.getTrain().getClass_());
+        Log.i("TDF", "id "+currentTrain.getTrain().getNumber());
 
         if (currentTrain!=null)
             presenter.retrieveData(currentTrain.getTrain().getClass_(), currentTrain.getTrain().getNumber());
-
         // Load the map
         FragmentManager fragmentManager = ((MainActivity)context).getSupportFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
@@ -150,22 +159,16 @@ public class TrainDetailFragment extends Fragment implements
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putString(Constant.CLASS_NUM_KEY, currentTrain.getTrain().getClass_());
-        outState.putString(Constant.TRAIN_NUM_KEY, currentTrain.getTrain().getNumber());
-
-        FragmentManager fragmentManager = ((MainActivity)context).getSupportFragmentManager();
-        FragmentTransaction transaction = fragmentManager.beginTransaction();
-        transaction.detach(mSupportMapFragment);
-        transaction.commit();
+        if (currentTrain!=null) {
+            outState.putString(Constant.CLASS_NUM_KEY, currentTrain.getTrain().getClass_());
+            outState.putString(Constant.TRAIN_NUM_KEY, currentTrain.getTrain().getNumber());
+        }
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
         mListener = null;
-        //Hide the map!
-        Log.i("TDF", "onDetach");
-
     }
 
     @Override
@@ -185,14 +188,33 @@ public class TrainDetailFragment extends Fragment implements
         } catch (SecurityException e) {
             e.printStackTrace();
         }
+
+        // Display flags for any sightings!
+        addSightingsToMap();
     }
 
+    public void addSightingsToMap() {
+        if (currentTrain.getSightings() != null && currentTrain.getSightings().size() > 0) {
+            BitmapDescriptor flagIcon = BitmapDescriptorFactory.fromResource(R.drawable.filled_flag_xxl)
+            for (SightingDetails each : currentTrain.getSightings())  {
+                MarkerOptions markerOptions = new MarkerOptions()
+                        .position(new LatLng(each.getLat(), each.getLon()))
+                        .title(each.getDate())
+                        .icon(flagIcon)
+                        .anchor(0.2f, 1f);
+
+                Marker marker = mGoogleMap.addMarker(markerOptions);
+            }
+        }
+    }
 
     // Called by our presenter
     @Override
     public void showTrainDetails(TrainDetail trainDetail) {
+        Log.i("TDF", "showTrainDetails "+trainDetail);
         this.currentTrain = trainDetail;
         tvClass.setText(trainDetail.getTrain().getClass_());
+        tvTrainNumber.setText(trainDetail.getTrain().getNumber());
         tvTrainName.setText(trainDetail.getTrain().getName());
         tvTrainLivery.setText(trainDetail.getTrain().getLivery());
         tvTrainOperator.setText(trainDetail.getTrain().getOperator());
@@ -222,7 +244,7 @@ public class TrainDetailFragment extends Fragment implements
 
     @Override
     public void onErrorLoading(String message) {
-
+        Log.i("TDF", "Error : "+message);
     }
 
     @Override

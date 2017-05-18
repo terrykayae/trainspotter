@@ -1,6 +1,8 @@
 package uk.co.tezk.trainspotter.adapters;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -27,6 +29,7 @@ public class GalleryRecyclerViewAdapter extends RecyclerView.Adapter<GalleryRecy
     private List<GalleryDrawable> images;
     private Context context;
     private OnImageClickListener imageClickListener;
+    private int imageViewHeight = 120;
 
     public GalleryRecyclerViewAdapter(List<String> imagePaths, Context context, OnImageClickListener imageClickListener) {
         // The first item in the list should always be a "Add photo" button
@@ -34,7 +37,8 @@ public class GalleryRecyclerViewAdapter extends RecyclerView.Adapter<GalleryRecy
         this.imageClickListener = imageClickListener;
         GalleryDrawable addPhotoButton = new GalleryDrawable();
         addPhotoButton.setUrl(TAKE_PHOTO);
-        addPhotoButton.setDrawable(context.getResources().getDrawable(R.drawable.camera));
+        //addPhotoButton.setDrawable(context.getResources().getDrawable(R.drawable.camera));
+        addPhotoButton.setBitmap(BitmapFactory.decodeResource(context.getResources(), R.drawable.camera));
         this.images.add(addPhotoButton);
         // TODO : Get drawables for the list of images
         this.context = context;
@@ -49,7 +53,16 @@ public class GalleryRecyclerViewAdapter extends RecyclerView.Adapter<GalleryRecy
 
     @Override
     public void onBindViewHolder(final GalleryViewHolder holder, int position) {
-        holder.galleryImage.setImageDrawable(images.get(position).getDrawable());
+        //holder.galleryImage.setImageDrawable(images.get(position).getDrawable());
+        holder.galleryImage.setImageBitmap(images.get(position).getBitmap());
+        float scale = (float)images.get(position).getBitmap().getWidth()/(float)images.get(position).getBitmap().getHeight();
+        int h = holder.galleryImage.getHeight();
+        if (h !=0)
+            imageViewHeight = h;
+        int setWidth = (int)(scale * (float)imageViewHeight);
+
+        holder.galleryImage.setMinimumWidth(setWidth);
+        holder.galleryImage.setMaxWidth(setWidth);
         holder.url = images.get(position).getUrl();
 
         // Dynamically add extra padding to the right hand side of last item
@@ -89,6 +102,7 @@ public class GalleryRecyclerViewAdapter extends RecyclerView.Adapter<GalleryRecy
     // Class to hold the drawables and the URLs together in the list
     public class GalleryDrawable {
         private Drawable drawable;
+        private Bitmap bitmap;
         private String Url;
 
         public Drawable getDrawable() {
@@ -106,15 +120,34 @@ public class GalleryRecyclerViewAdapter extends RecyclerView.Adapter<GalleryRecy
         public void setUrl(String url) {
             Url = url;
         }
+
+        public Bitmap getBitmap() {
+            return bitmap;
+        }
+
+        public void setBitmap(Bitmap bitmap) {
+            this.bitmap = bitmap;
+        }
     }
 
     // Called by fragments to add images to the list, when camera is used for example
-    public void addImage(String filename) {
+    public void addImageFromFile(String filename) {
+        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
+        bmOptions.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(filename, bmOptions);
+        int imageHeight = bmOptions.outHeight;
+        int imageWidth = bmOptions.outWidth;
+
+        bmOptions.inSampleSize = imageHeight / imageViewHeight;
+        bmOptions.inJustDecodeBounds = false;
+
+        Bitmap bitmap = BitmapFactory.decodeFile(filename, bmOptions);
+
         GalleryDrawable galleryDrawable = new GalleryDrawable();
-        galleryDrawable.setUrl("From camera");
-        galleryDrawable.setDrawable(Drawable.createFromPath(filename));
+        galleryDrawable.setUrl(filename);
+        //galleryDrawable.setDrawable(Drawable.createFromPath(filename));
+        galleryDrawable.setBitmap(bitmap);
         images.add(galleryDrawable);
-        Log.i("GRVA", "Added image " + galleryDrawable);
     }
 
     // In order to pass on click messages, out holder fragment must implement this

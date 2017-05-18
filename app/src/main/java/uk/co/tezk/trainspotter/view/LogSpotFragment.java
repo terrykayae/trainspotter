@@ -1,15 +1,11 @@
 package uk.co.tezk.trainspotter.view;
 
 import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.FileProvider;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -30,13 +26,10 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 
-import java.io.File;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 
 import javax.inject.Inject;
 
@@ -48,6 +41,7 @@ import uk.co.tezk.trainspotter.R;
 import uk.co.tezk.trainspotter.TrainSpotterApplication;
 import uk.co.tezk.trainspotter.Utilitity;
 import uk.co.tezk.trainspotter.adapters.GalleryRecyclerViewAdapter;
+import uk.co.tezk.trainspotter.model.Camera;
 import uk.co.tezk.trainspotter.model.MyLocation;
 import uk.co.tezk.trainspotter.model.SightingDetails;
 import uk.co.tezk.trainspotter.network.Submitter;
@@ -57,7 +51,9 @@ import uk.co.tezk.trainspotter.realm.RealmHandler;
 
 import static uk.co.tezk.trainspotter.model.Constant.DATE_RECORDED_KEY;
 import static uk.co.tezk.trainspotter.model.Constant.FRAG_TAG_DATE_PICKER;
+import static uk.co.tezk.trainspotter.model.Constant.IMAGES_KEY;
 import static uk.co.tezk.trainspotter.model.Constant.MAP_VIEW_PARCELABLE_KEY;
+import static uk.co.tezk.trainspotter.model.Constant.MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_SPOT;
 import static uk.co.tezk.trainspotter.model.Constant.MY_PERMISSIONS_REQUEST_LOCATION_FROM_SPOT;
 import static uk.co.tezk.trainspotter.model.Constant.REQUEST_IMAGE_CAPTURE_FROM_SPOT;
 import static uk.co.tezk.trainspotter.model.Constant.TAKE_PHOTO;
@@ -76,8 +72,10 @@ public class LogSpotFragment extends Fragment implements
     SupportMapFragment mSupportMapFragment;
     private GoogleMap mGoogleMap;
 
-    private String imageFilename;
-    private List<String>imageList;
+    private ArrayList<String>imageList;
+
+    // Camera helper - deals with permissions for us
+    private Camera camera;
 
     @Inject
     MyLocation locationPresenter;
@@ -122,36 +120,40 @@ public class LogSpotFragment extends Fragment implements
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.i("LSF","onCreate");
-        // Clear settings
-        //mapSettings = null;
         // Initiate Dagger injections
         TrainSpotterApplication.getApplication().getLocationComponent().inject(this);
 
         //Ask for our location
         locationPresenter.bind(this);
         locationPresenter.getLocation();
-        if (trainNum != null) {
-            etTrainId.setText(trainNum);
-        }
 
+        //initialise the gallery adapter
         if (galleryRecyclerViewAdapter == null)
             galleryRecyclerViewAdapter = new GalleryRecyclerViewAdapter(new ArrayList(), getContext(), this);
+        imageList = new ArrayList<>();
     }
 
     @Override
     public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
         super.onViewStateRestored(savedInstanceState);
-        // Restore mapSettings
+
         if (savedInstanceState != null) {
+            // Restore mapSettings
             mapSettings = savedInstanceState.getParcelable(MAP_VIEW_PARCELABLE_KEY);
             if (mGoogleMap != null && mapSettings != null) {
-                Log.i("LSF","Calling onMapReady() from oVSR");
                 onMapReady(mGoogleMap);
             }
-            Log.i("LSF", "onVSR() mapSettings = "+mapSettings);
-        } else {
-            Log.i("LSF", "onVSR() no map settings");
+            // Restore the UI
+            if (savedInstanceState.getString(TRAIN_NUM_KEY) != null)
+                etTrainId.setText(savedInstanceState.getString(TRAIN_NUM_KEY));
+            if (savedInstanceState.getString(DATE_RECORDED_KEY) != null)
+                tvDate.setText(savedInstanceState.getString(DATE_RECORDED_KEY));
+            // And the images
+            if (savedInstanceState.getStringArrayList(IMAGES_KEY) != null) {
+                imageList = savedInstanceState.getStringArrayList(IMAGES_KEY);
+                for (String each : imageList)
+                    galleryRecyclerViewAdapter.addImageFromFile(each);
+            }
         }
     }
 
@@ -175,6 +177,9 @@ public class LogSpotFragment extends Fragment implements
         super.onViewCreated(view, savedInstanceState);
         // Initialise Butterknife
         ButterKnife.bind(this, view);
+        if (trainNum != null) {
+            etTrainId.setText(trainNum);
+        }
         // Set the date textview to today's date
         tvDate.setText(new SimpleDateFormat("dd/MM/yyyy").format(new Date()));
 
@@ -191,7 +196,6 @@ public class LogSpotFragment extends Fragment implements
         this.context = context;
 
         mSupportMapFragment = SupportMapFragment.newInstance();
-
     }
 
     public void onResume() {
@@ -239,14 +243,15 @@ public class LogSpotFragment extends Fragment implements
         outState.putString(TRAIN_NUM_KEY, etTrainId.getText().toString());
         outState.putString(DATE_RECORDED_KEY, tvDate.getText().toString());
 
-
+        // Save the images
+        if (imageList !=null && imageList.size()>0) {
+            outState.putStringArrayList(IMAGES_KEY, imageList);
+        }
     }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         this.mGoogleMap = googleMap;
-        Log.i("LSF", "Got map");
-
         // Enable the setMyLocation
         try {
             if (Utilitity.checkLocationPermissions(context, MY_PERMISSIONS_REQUEST_LOCATION_FROM_SPOT)) {
@@ -268,7 +273,6 @@ public class LogSpotFragment extends Fragment implements
             );
             CameraUpdate cameraUpdate = CameraUpdateFactory.newCameraPosition(cameraPosition);
             googleMap.moveCamera(cameraUpdate);
-            Log.i("LSF", "Moved camera due to savedSettings in onMapReady()");
         }
     }
 
@@ -277,20 +281,19 @@ public class LogSpotFragment extends Fragment implements
     public void updatePosition(LatLng latLng) {
         if (mapSettings==null)
             if (mLatLng == null && mGoogleMap != null) {
-                Log.i("LSF", "Moving camera due to position update");
                 mGoogleMap.moveCamera(CameraUpdateFactory.zoomTo(14f));
                 mGoogleMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
             }
         this.mLatLng = latLng;
     }
 
-    public void handleSave() {
-        // Called when FAB is pressed in main activity and we're active
+    public boolean handleSave() {
+        // Called when FAB is pressed in main activity and we're active - return true if we've saved
         if (tvDate.getText().length() == 0 || etTrainId.getText().length() == 0) {
-            Toast.makeText(getContext(), "Fields were blank!\nNot saving", Toast.LENGTH_LONG).show();
-            return;
+            Toast.makeText(getContext(), getResources().getText(R.string.missing_train_number_error), Toast.LENGTH_LONG).show();
+            //Toast.makeText(getContext(), "You haven't set a train number!\nPress back to close without saving", Toast.LENGTH_LONG).show();
+            return false;
         }
-        // TODO : Save location as well
         // Create and store object
         SightingDetails sightingDetails = new SightingDetails();
         sightingDetails.setTrainId(etTrainId.getText().toString());
@@ -301,10 +304,13 @@ public class LogSpotFragment extends Fragment implements
             sightingDetails.setLon((float) mLatLng.longitude);
 
         }
+        // Save the images
+        RealmHandler.getInstance().persistImageDetails(imageList, sightingDetails);
         // Store in the DB
         RealmHandler.getInstance().persistSightingDetails(sightingDetails);
         // Send to the server
         Submitter.getInstance().submitSighting(sightingDetails);
+        return true;
     }
 
     @OnClick(R.id.tvDate)
@@ -324,40 +330,26 @@ public class LogSpotFragment extends Fragment implements
     @Override
     public void onClick(String imageUrl) {
         if (TAKE_PHOTO.equals(imageUrl)) {
-            Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            if (takePictureIntent.resolveActivity(context.getPackageManager()) != null) {
-                File imageFile = null;
-                try {
-                    imageFile = Utilitity.createImageFile(context);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            if (camera == null)
+                camera = new Camera(context, REQUEST_IMAGE_CAPTURE_FROM_SPOT, MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_SPOT);
+            // Start activity, when onImageReady is called, we can get filename from camera
+            camera.takePicture();
 
-                if (imageFile != null) {
-                    Uri photoURI = FileProvider.getUriForFile(
-                            context,
-                            "uk.co.tezk.trainspotter",
-                            imageFile);
-                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
-                    imageFilename = imageFile.getAbsolutePath();
-
-                    Log.i("LSF","Image will save at : "+imageFile.getAbsolutePath());
-                }
-
-                ((MainActivity) context).startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE_FROM_SPOT);
-            }
         } else {
             // TODO : Show bigger image
             Toast.makeText(context, imageUrl, Toast.LENGTH_SHORT).show();
         }
     }
 
-    // Called by MainAcivity when it receives notification that our image is ready
+    // Called by MainActivity when it receives notification that our image is ready
     public void onImageReady() {
-        Log.i("LSF", "image "+imageFilename+" is ready for access");
+        String imageFilename = camera.getFilename();
+        // Ask the camera to notify the gallery
+        camera.addToGallery();
+        Log.i("LSF", "image " + imageFilename + " is ready for access");
         // Notify the adapter so it can display the image
         GalleryRecyclerViewAdapter adapter = ((GalleryRecyclerViewAdapter) rvGallery.getAdapter());
-        adapter.addImage(imageFilename);
+        adapter.addImageFromFile(imageFilename);
         adapter.notifyItemRangeChanged(0, adapter.getItemCount());
         adapter.notifyDataSetChanged();
         // Save the filename to our list

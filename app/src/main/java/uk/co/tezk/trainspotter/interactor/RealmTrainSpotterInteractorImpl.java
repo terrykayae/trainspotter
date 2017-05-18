@@ -53,13 +53,20 @@ public class RealmTrainSpotterInteractorImpl implements ITrainSpotterInteractor 
 
         Log.i("RTSI", "realm train Count = "+realm.where(TrainListItem.class).count());
 
-        RealmResults<TrainListItem> results = realm.where(TrainListItem.class).equalTo("number", classNumber).findAll();
+        RealmResults<TrainListItem> results = realm.where(TrainListItem.class).equalTo("_class", classNumber).findAll();
         // Nothing in database, return empty observable
+        Log.i("RTSI", "Searching for \""+classNumber+"\" found "+results.size());
         if (results.size()==0)
             return Observable.empty();
         // Need to return an Observable that has a list of Trains
         // TODO : Check if this crashes
-        return Observable.just((List<TrainListItem>)results);
+        final List <TrainListItem> newList = new ArrayList<>();
+        for (TrainListItem each : results) {
+            newList.add(each);
+        }
+
+
+        return Observable.just(newList);
     }
 
     @Override

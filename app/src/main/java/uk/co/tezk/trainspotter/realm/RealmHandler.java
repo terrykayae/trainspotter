@@ -2,8 +2,13 @@ package uk.co.tezk.trainspotter.realm;
 
 import android.util.Log;
 
+import java.util.Date;
+import java.util.List;
+
 import io.realm.Realm;
 import io.realm.RealmResults;
+import uk.co.tezk.trainspotter.Utilitity;
+import uk.co.tezk.trainspotter.model.ImageDetails;
 import uk.co.tezk.trainspotter.model.SightingDetails;
 
 /**
@@ -16,7 +21,6 @@ public class RealmHandler {
     private RealmHandler() {
 
     }
-
 
     public static RealmHandler getInstance() {
         if (realmHandler == null) {
@@ -42,8 +46,7 @@ public class RealmHandler {
                         realm.copyToRealm(sightingDetails);
                     }
                 });
-
-            }
+           }
 
         };
         t.start();
@@ -62,5 +65,33 @@ public class RealmHandler {
         Realm realm = Realm.getDefaultInstance();
         RealmResults<SightingDetails> results = realm.where(SightingDetails.class).equalTo("trainId", trainNum).findAll();
         return results;
+    }
+
+    public void persistImageDetails(final List<String> imageFilenames, final SightingDetails sightingDetails) {
+        if (imageFilenames!=null && imageFilenames.size()>0) {
+            final Realm instance = Realm.getDefaultInstance();
+            instance.executeTransaction(new Realm.Transaction() {
+                @Override
+                public void execute(Realm realm) {
+                    for (String each : imageFilenames) {
+                        ImageDetails imageDetails = new ImageDetails();
+                        imageDetails.setImageUrl(each);
+                        imageDetails.setDate(sightingDetails.getDate());
+                        imageDetails.setLocationName(sightingDetails.getLocationName());
+                        imageDetails.setClassNum(sightingDetails.getTrainClass());
+                        imageDetails.setTakenByUs(true);
+                        imageDetails.setTrainNum(sightingDetails.getTrainId());
+                        imageDetails.setTime(Utilitity.getTime(new Date()));
+                        realm.copyToRealmOrUpdate(imageDetails);
+                    }
+                }
+            });
+
+        }
+    }
+
+    public RealmResults <ImageDetails>getImageDetails(String classNum, String trainNum) {
+        Realm realm = Realm.getDefaultInstance();
+        return realm.where(ImageDetails.class).equalTo("trainId", trainNum).findAll();
     }
 }

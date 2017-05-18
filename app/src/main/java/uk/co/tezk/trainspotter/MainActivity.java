@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -25,17 +24,18 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Toast;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
 
 import io.realm.Realm;
+import uk.co.tezk.trainspotter.model.Camera;
 import uk.co.tezk.trainspotter.model.Constant;
 import uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION;
 import uk.co.tezk.trainspotter.model.TrainDetail;
 import uk.co.tezk.trainspotter.parcel.MapViewParcelable;
+import uk.co.tezk.trainspotter.realm.ApiCache;
 import uk.co.tezk.trainspotter.view.ClassListFragment;
 import uk.co.tezk.trainspotter.view.LogSpotFragment;
 import uk.co.tezk.trainspotter.view.TrainDetailFragment;
@@ -50,13 +50,13 @@ import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.LOG_SPOT;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.TRAIN_DETAIL;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.TRAIN_LIST;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION_KEY;
+import static uk.co.tezk.trainspotter.model.Constant.MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_MAIN;
 import static uk.co.tezk.trainspotter.model.Constant.MY_PERMISSIONS_REQUEST_LOCATION_FROM_DETAILS;
 import static uk.co.tezk.trainspotter.model.Constant.MY_PERMISSIONS_REQUEST_LOCATION_FROM_SPOT;
 import static uk.co.tezk.trainspotter.model.Constant.PICK_IMAGE_FROM_GALLERY;
-import static uk.co.tezk.trainspotter.model.Constant.REQUEST_IMAGE_CAPTURE;
+import static uk.co.tezk.trainspotter.model.Constant.REQUEST_IMAGE_CAPTURE_FROM_MAIN;
 import static uk.co.tezk.trainspotter.model.Constant.REQUEST_IMAGE_CAPTURE_FROM_SPOT;
 import static uk.co.tezk.trainspotter.model.Constant.SHOW_CLASS;
-import static uk.co.tezk.trainspotter.model.Constant.SHOW_ENGINE;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
@@ -80,6 +80,9 @@ public class MainActivity extends AppCompatActivity
     private static Fragment fragment;
     // If we're loading two fragments, this is what and where for the second
     Fragment secondFragment;
+
+    // Holder for the camera image filename
+    private String imageFilename;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -136,6 +139,12 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
+    protected void onStop() {
+        super.onStop();
+        ApiCache.getInstance().unsubscribe();
+    }
+
+    @Override
     public void onBackPressed() {
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         // Is the navigation drawer open? Close if it is!
@@ -152,7 +161,12 @@ public class MainActivity extends AppCompatActivity
                     if (actionStack.pop() == LOG_SPOT) {
                         setFabSpot();
                     }
+                    if (actionStack.size() == 0) {
+                        Log.e("MA", "actionStack was empty");
+                        actionStack.push(CLASS_LIST);
+                    }
                     currentAction = actionStack.peek();
+
                 }
             } else
                 finish();
@@ -189,18 +203,17 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.nav_camera) {
-            Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-                startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
-            }
-
+            imageFilename = new Camera(this,
+                    Constant.REQUEST_IMAGE_CAPTURE_FROM_MAIN,
+                    Constant.MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_MAIN)
+                    .takePicture();
         } else if (id == R.id.nav_gallery) {
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("image/*");
             startActivityForResult(intent, PICK_IMAGE_FROM_GALLERY);
-        } else if (id == R.id.nav_slideshow) {
+        } else if (id == R.id.nav_favourites) {
+            // Todo : Show list of favourites
 
-        } else if (id == R.id.nav_manage) {
 
         } else if (id == R.id.nav_share) {
 
@@ -220,6 +233,7 @@ public class MainActivity extends AppCompatActivity
         findViewById(R.id.ivMallard).setAlpha(0.3f);
     }
 
+
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         // Save currentAction
@@ -232,7 +246,7 @@ public class MainActivity extends AppCompatActivity
         //Reset the fragment holder
         //fragment = null;
         Log.i("MA", "Loading fragment " + action + " with addToBackStack " + addToBackStack);
-        Log.i("MA", "fragment = "+fragment+", currentAction = "+currentAction);
+        Log.i("MA", "fragment = " + fragment + ", currentAction = " + currentAction);
         secondFragment = null;
         int secondViewId = 0;
         // Check for multi fragment layout
@@ -294,13 +308,23 @@ public class MainActivity extends AppCompatActivity
             case TRAIN_DETAIL:
                 // if landscape, train details on the right, train list on left
                 if (landscape) {
-                    TrainListFragment mTrainListFragmentForDetail = new TrainListFragment();
-                    fragment = mTrainListFragmentForDetail;
-                    String classToShowForDetail = (params == null ? "1" : params.get(Constant.SHOW_CLASS));
-                    Log.i("MA", "loadFragment, (land, traininfo) showing class " + classToShowForDetail);
-                    mTrainListFragmentForDetail.setShowTrainsForClass(classToShowForDetail);
+                    if (!(fragment instanceof TrainListFragment)) {
+                        TrainListFragment mTrainListFragmentForDetail = new TrainListFragment();
+                        fragment = mTrainListFragmentForDetail;
+                        String classToShowForDetail = (params == null ? "1" : params.get(Constant.SHOW_CLASS));
+                        mTrainListFragmentForDetail.setShowTrainsForClass(classToShowForDetail);
+                        Log.i("MA", "loadFragment, (land, traininfo) showing class " + classToShowForDetail);
+                    }
                 } else {
-                    fragment = new TrainDetailFragment();
+                    // is fragment current TrainDetailFragment? Might be if we've been paused. Only load new if not
+                    if (!(fragment instanceof TrainDetailFragment)) {
+                        fragment = new TrainDetailFragment();
+                        if (params != null) {
+                            String classNum = params.get(Constant.CLASS_NUM_KEY);
+                            String trainNum = params.get(Constant.TRAIN_NUM_KEY);
+                            ((TrainDetailFragment)fragment).setShowDetailsForTrain(classNum, trainNum);
+                        }
+                    }
                 }
                 break;
             default:
@@ -395,30 +419,20 @@ public class MainActivity extends AppCompatActivity
         });
     }
 
-    private void setFabCamera() {
-        fab.setImageDrawable(getResources().getDrawable(drawable.ic_menu_camera));
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Toast.makeText(context, "Camera!", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
     private void setFabSave() {
-        // When the Add Sighting fragment is shown, FAB should save
+        // When the Add Sighting fragment is shown, FAB should save the sighting
         fab.setImageDrawable(getResources().getDrawable(drawable.ic_menu_save));
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // Toast.makeText(context, "Save!", Toast.LENGTH_SHORT).show();
                 if (fragment instanceof LogSpotFragment) {
-                    Log.i("MA", "Saving!");
+                    //Get the fragment
                     LogSpotFragment logSpotFragment = (LogSpotFragment) fragment;
-                    logSpotFragment.handleSave();
-                    onBackPressed();
+                    //And save - if returns true it has saved, so we can close fragment by simulating Back Pressed
+                    if (logSpotFragment.handleSave())
+                        onBackPressed();
                 } else {
-                    Log.i("MA", "Save pressed on none savabble screen?");
+                    Log.i("MA", "Save pressed on none savable screen?");
                 }
             }
         });
@@ -431,8 +445,8 @@ public class MainActivity extends AppCompatActivity
         // TODO : if phone, load in train details fragment
         Log.i("MA", "onShowTrainDetails " + classNum + ", " + trainNum);
         Map args = new HashMap();
-        args.put(SHOW_CLASS, classNum);
-        args.put(SHOW_ENGINE, trainNum);
+        args.put(Constant.CLASS_NUM_KEY, classNum);
+        args.put(Constant.TRAIN_NUM_KEY, trainNum);
         if (landscape) {
             // Current action doesn't change as we still show class list in landscape, tell second fragment to load new class
             //    ((TrainListFragment)secondFragment).setShowTrainsForClass(classNum);
@@ -454,6 +468,7 @@ public class MainActivity extends AppCompatActivity
         super.onDestroy();
         // Shutdown realm
         Realm.getDefaultInstance().close();
+        ApiCache.getInstance().unsubscribe();
     }
 
     // Called when the permission dialog is closed
@@ -480,7 +495,13 @@ public class MainActivity extends AppCompatActivity
                         }
                     }
                     break;
-
+                    case MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_MAIN: {
+                        imageFilename = new Camera(this,
+                                Constant.REQUEST_IMAGE_CAPTURE_FROM_MAIN,
+                                Constant.MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_MAIN)
+                                .takePicture();
+                    }
+                    break;
                 }
             }
 
@@ -490,16 +511,15 @@ public class MainActivity extends AppCompatActivity
     // Camera callback
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
         if (requestCode == REQUEST_IMAGE_CAPTURE_FROM_SPOT && resultCode == RESULT_OK) {
+            // Was image request sent from within LogSpot fragment? If so, pass on the message
             if (fragment instanceof LogSpotFragment) {
-        //        Drawable drawable = new BitmapDrawable(getResources(), (Bitmap)data.getExtras().get("data"));
-        //        ((LogSpotFragment)fragment).onNewImage(drawable);
-                ((LogSpotFragment)fragment).onImageReady();
+                ((LogSpotFragment) fragment).onImageReady();
             }
-        } else if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
-            Bundle extras = data.getExtras();
-            Bitmap imageBitmap = (Bitmap) extras.get("data");
-            //mImageView.setImageBitmap(imageBitmap);
+        } else if (requestCode == REQUEST_IMAGE_CAPTURE_FROM_MAIN && resultCode == RESULT_OK) {
+            // Was image request sent from MainActivity? Start LogSpot to save it!
+            Log.i("MA", "image "+imageFilename+" is ready for access!");
         } else if (requestCode == PICK_IMAGE_FROM_GALLERY && resultCode == RESULT_OK) {
             // Image picked!
             Uri selectedImage = data.getData();

@@ -14,6 +14,8 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import butterknife.BindView;
@@ -68,59 +70,7 @@ public class TrainListFragment extends Fragment implements
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        presenter = new TrainListPresenterImpl();
-    }
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-
-        presenter.bind(this);
-       // Inflate the layout for this fragment
-        int layout = forcePortrait?R.layout.fragment_train_list_subfragment:R.layout.fragment_train_list;
-        return inflater.inflate(layout, container, false);
-    }
-
-    @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        // Initialise Butterknife anotations
-        ButterKnife.bind(this, view);
-        trainListRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        Log.i("TLF", "Get trains for "+showTrainsForClass);
-
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        presenter.unbind();
-    }
-
-    public void reloadTrainList() {
-        if (mTrainList.size()==0) {
-            if (showTrainsForClass==null || showTrainsForClass.equals("0")) {
-                return;
-            }
-            Log.i("TLF", "onResume, calling retrieveData "+showTrainsForClass);
-            presenter.retrieveData(showTrainsForClass);
-        } else {
-            Log.i("TLF", "onResume, mTrainList.size = "+mTrainList.size());
-        }
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        reloadTrainList();
-    }
-
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            // TODO : need to pass train details from selected item
-            mListener.onShowTrainDetails(uri.toString(), uri.toString());
-        }
     }
 
     @Override
@@ -136,16 +86,71 @@ public class TrainListFragment extends Fragment implements
     }
 
     @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        presenter = new TrainListPresenterImpl();
+        presenter.bind(this);
+       // Inflate the layout for this fragment
+        int layout = forcePortrait?R.layout.fragment_train_list_subfragment:R.layout.fragment_train_list;
+        return inflater.inflate(layout, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        // Initialise Butterknife anotations
+        ButterKnife.bind(this, view);
+        trainListRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        Log.i("TLF", "Get trains for "+showTrainsForClass);
+       // reloadTrainList();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        reloadTrainList();
+    }
+
+    @Override
     public void onDetach() {
         super.onDetach();
-        mListener = null;
+    }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        presenter.unbind();
+    }
+
+    public void reloadTrainList() {
+        if (mTrainList.size()==0) {
+            if (showTrainsForClass==null || showTrainsForClass.equals("0")) {
+                return;
+            }
+            Log.i("TLF", "rltl, calling retrieveData "+showTrainsForClass);
+            presenter.retrieveData(showTrainsForClass);
+        } else {
+            Log.i("TLF", "rltl, mTrainList.size = "+mTrainList.size());
+        }
     }
 
 
+    // TODO: Rename method, update argument and hook method into UI event
+    public void onButtonPressed(Uri uri) {
+        if (mListener != null) {
+            // TODO : need to pass train details from selected item
+            mListener.onShowTrainDetails(uri.toString(), uri.toString());
+        }
+    }
 
     @Override
     public void showTrainList(List<TrainDetail> trainList) {
+        Collections.sort(trainList, new Comparator<TrainDetail>() {
+            @Override
+            public int compare(TrainDetail o1, TrainDetail o2) {
+                return o1.getTrain().getNumber().compareTo(o2.getTrain().getNumber());
+            }
+        });
         trainListRecyclerView.setAdapter(new TrainListRecyclerViewAdapter(trainList, this, getContext()));
     }
 

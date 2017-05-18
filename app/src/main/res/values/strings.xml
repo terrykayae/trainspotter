@@ -29,4 +29,5 @@
     <string name="last_seen">Last seen :</string>
     <string name="map_loading_please_wait">Map loading, please wait</string>
     <string name="none_reported">None reported</string>
+    <string name="missing_train_number_error">You haven\'t set a train number!\nPress back to close without saving</string>
 </resources>

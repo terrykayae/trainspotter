@@ -1,5 +1,7 @@
 package uk.co.tezk.trainspotter.presenter;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -106,6 +108,7 @@ public class TrainListPresenterImpl implements ITrainListPresenter.IPresenter {
                 .subscribe(new Observer<TrainDetail>() {
                     @Override
                     public void onCompleted() {
+                        Log.i("TLPI", "Observable onCompleted");
                         view.showTrainList(trainDetailList);
                         view.onCompletedLoading();
                     }
