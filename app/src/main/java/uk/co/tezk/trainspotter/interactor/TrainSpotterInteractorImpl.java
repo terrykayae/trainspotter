@@ -1,5 +1,7 @@
 package uk.co.tezk.trainspotter.interactor;
 
+import android.util.Log;
+
 import java.util.List;
 
 import rx.Observable;
@@ -32,8 +34,10 @@ public class TrainSpotterInteractorImpl implements ITrainSpotterInteractor {
     public Observable<ClassNumbers> getClassNumbers() {
         // Fetch then cache the numbers
         Observable<ClassNumbers> classNumbers = retrofit.getClassNumbers();
+        Log.i("TSII", "getClassNumbers, calling api");
         ApiCache.getInstance().cacheClassList(classNumbers);
        // ApiCache.getInstance().unsubscribe();
+        Log.i("TSII", "getClassNumbers, returning");
         return classNumbers;
     }
 

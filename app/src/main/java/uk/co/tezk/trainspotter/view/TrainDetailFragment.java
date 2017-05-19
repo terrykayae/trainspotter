@@ -12,12 +12,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
@@ -65,7 +68,7 @@ public class TrainDetailFragment extends Fragment implements
     // Include getter for GoogleMap so mainActivity can enable location
     public GoogleMap getGoogleMap() { return mGoogleMap; }
 
-    TrainDetail currentTrain;
+    private TrainDetail currentTrain;
     // Include getter so Activity can see what we're showing
     public TrainDetail getCurrentTrain() { return currentTrain; }
 
@@ -158,6 +161,18 @@ public class TrainDetailFragment extends Fragment implements
     }
 
     @Override
+    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
+        super.onViewStateRestored(savedInstanceState);
+        if (savedInstanceState!=null) {
+            String classNum = savedInstanceState.getString(Constant.CLASS_NUM_KEY);
+            String trainNum = savedInstanceState.getString(Constant.TRAIN_NUM_KEY);
+            if (classNum!=null && trainNum!=null) {
+                setShowDetailsForTrain(classNum, trainNum);
+            }
+        }
+    }
+
+    @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         if (currentTrain!=null) {
@@ -197,6 +212,16 @@ public class TrainDetailFragment extends Fragment implements
     public void addSightingsToMap() {
         markers = new HashMap();
         if (currentTrain.getSightings() != null && currentTrain.getSightings().size() > 0) {
+            // Save the boundaries and average of the points
+            int count = 0;
+            double avgLat = 0;
+            double avgLon = 0;
+            double minLat = Double.MAX_VALUE;
+            double maxLat = Double.MIN_VALUE;
+            double minLon = Double.MAX_VALUE;
+            double maxLon = Double.MIN_VALUE;
+
+            // Add marker
             BitmapDescriptor flagIcon = BitmapDescriptorFactory.fromResource(R.drawable.green_flag);
             for (SightingDetails each : currentTrain.getSightings())  {
                 MarkerOptions markerOptions = new MarkerOptions()
@@ -206,6 +231,29 @@ public class TrainDetailFragment extends Fragment implements
                         .anchor(0.2f, 1f);
 
                 markers.put(each.getTrainId(), mGoogleMap.addMarker(markerOptions));
+
+                // Map boundaries
+                if (each.getLat() > maxLat)
+                    maxLat = each.getLat();
+                if (each.getLat() < minLat)
+                    minLat = each.getLat();
+                if (each.getLon() > maxLon)
+                    maxLon = each.getLon();
+                if (each.getLon() < minLon)
+                    minLon = each.getLon();
+                avgLat += each.getLat();
+                avgLon += each.getLon();
+                if (count++ > 0) {
+                    avgLat /= 2;
+                    avgLon /= 2;
+                }
+                // latlon, zoom, tilt, bearin
+                //CameraPosition cameraPosition = new CameraPosition(new LatLng(avgLat, avgLon), 0, 0, 0);
+                //CameraUpdate cameraUpdate = CameraUpdateFactory.newCameraPosition(cameraPosition);
+                // 1st sw, 2nd = ne
+                LatLngBounds latLngBounds = new LatLngBounds(new LatLng(minLat, minLon), new LatLng(maxLat, maxLon));
+                CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(latLngBounds, 50);
+                mGoogleMap.animateCamera(cameraUpdate);
             }
         }
     }

@@ -29,11 +29,8 @@ public class RealmHandler {
         return realmHandler;
     }
 
-    public void persistSightingDetails(final SightingDetails sightingDetails) {
-        Thread t = new Thread() {
-            // Send to background thread
-            @Override
-            public void run() {
+    public SightingDetails persistSightingDetails(final SightingDetails sightingDetails) {
+        SightingDetails toRealm;
                 // If we don't know train class, set to 0
                 if (sightingDetails.getTrainClass()==null)
                     sightingDetails.setTrainClass("0");
@@ -43,21 +40,13 @@ public class RealmHandler {
                 {
                     @Override
                     public void execute(Realm realm) {
-                        realm.copyToRealm(sightingDetails);
+                        SightingDetails toRealm = realm.copyToRealm(sightingDetails);
                     }
                 });
-           }
 
-        };
-        t.start();
-        //TODO : take out the join when we know it works
-        try {
-            t.join();
+
             Log.i("RH", "Saved, currently logged sightings : "+Realm.getDefaultInstance().where(SightingDetails.class).count());
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
+            return sightingDetails;
     }
 
     public RealmResults<SightingDetails> getSightings(String classNum, String trainNum) {

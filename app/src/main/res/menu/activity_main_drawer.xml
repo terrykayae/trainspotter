@@ -5,16 +5,19 @@
         <item
             android:id="@+id/nav_camera"
             android:icon="@drawable/ic_menu_camera"
-            android:title="Take photo" />
+            android:title="@string/take_photo" />
         <item
             android:id="@+id/nav_gallery"
             android:icon="@drawable/ic_menu_gallery"
-            android:title="Gallery" />
+            android:title="@string/gallery" />
         <item
             android:id="@+id/nav_favourites"
             android:icon="@drawable/ic_menu_star"
-            android:title="Favourites" />
-
+            android:title="@string/favourites" />
+        <item
+            android:id="@+id/nav_history"
+            android:icon="@drawable/perm_group_system_clock"
+            android:title="@string/history" />
     </group>
 
     <item android:title="Communicate">

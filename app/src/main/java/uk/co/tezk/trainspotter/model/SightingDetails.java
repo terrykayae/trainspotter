@@ -17,6 +17,8 @@ public class SightingDetails extends RealmObject {
     // if time is null for any sighting, this marks it as a sighting pulled from the API
     private String time;
     private String locationName;
+    // When reported to API, we mark as reported on success
+    private boolean reportedToApi;
     // These fields are also stored in Realm, but are filled by calls to the API
     @SerializedName("lat")
     @Expose
@@ -90,5 +92,13 @@ public class SightingDetails extends RealmObject {
 
     public void setLocationName(String locationName) {
         this.locationName = locationName;
+    }
+
+    public boolean isReportedToApi() {
+        return reportedToApi;
+    }
+
+    public void setReportedToApi(boolean reportedToApi) {
+        this.reportedToApi = reportedToApi;
     }
 }

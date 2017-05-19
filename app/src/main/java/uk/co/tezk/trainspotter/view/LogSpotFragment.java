@@ -291,7 +291,6 @@ public class LogSpotFragment extends Fragment implements
         // Called when FAB is pressed in main activity and we're active - return true if we've saved
         if (tvDate.getText().length() == 0 || etTrainId.getText().length() == 0) {
             Toast.makeText(getContext(), getResources().getText(R.string.missing_train_number_error), Toast.LENGTH_LONG).show();
-            //Toast.makeText(getContext(), "You haven't set a train number!\nPress back to close without saving", Toast.LENGTH_LONG).show();
             return false;
         }
         // Create and store object

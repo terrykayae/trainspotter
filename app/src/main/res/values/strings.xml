@@ -30,4 +30,8 @@
     <string name="map_loading_please_wait">Map loading, please wait</string>
     <string name="none_reported">None reported</string>
     <string name="missing_train_number_error">You haven\'t set a train number!\nPress back to close without saving</string>
+    <string name="take_photo">Take photo</string>
+    <string name="gallery">Gallery</string>
+    <string name="favourites">Favourites</string>
+    <string name="history">History</string>
 </resources>

@@ -72,4 +72,7 @@ public class Constant {
     public static final String ENGINE_NUMBER_KEY = "ENGINE_NO";
     public static final String DATE_RECORDED_KEY = "DATE";
     public static final String IMAGES_KEY = "IMAGES";
+
+    // Result of success from API
+    public static final String SUCCESS_MESSAGE = "success";
 }

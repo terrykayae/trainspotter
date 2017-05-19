@@ -155,6 +155,7 @@ public class MainActivity extends AppCompatActivity
             if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
 
                 getSupportFragmentManager().popBackStack();
+
                 if (actionStack.size() > 0) {
                     // Should never be 0 if we're popping - if last action was Spot, change the FAB button back
                     Log.i("MA", "pressed back = " + actionStack.peek());
@@ -166,7 +167,8 @@ public class MainActivity extends AppCompatActivity
                         actionStack.push(CLASS_LIST);
                     }
                     currentAction = actionStack.peek();
-
+                    fragment = getSupportFragmentManager().findFragmentByTag("MAIN_FRAGMENT");
+                    Log.i("MA", "Popped backstack = "+fragment);
                 }
             } else
                 finish();
@@ -344,9 +346,9 @@ public class MainActivity extends AppCompatActivity
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
 
-        transaction.replace(R.id.mainContainer, fragment);
+        transaction.replace(R.id.mainContainer, fragment, "MAIN_FRAGMENT");
         if (secondFragment != null) {
-            transaction.replace(secondViewId, secondFragment);
+            transaction.replace(secondViewId, secondFragment, "SECOND_FRAGMENT");
         }
 
 
@@ -484,7 +486,9 @@ public class MainActivity extends AppCompatActivity
                     == PackageManager.PERMISSION_GRANTED) {
                 switch (requestCode) {
                     case MY_PERMISSIONS_REQUEST_LOCATION_FROM_SPOT: {
+                        Log.i("MA", "permission call back from logspot");
                         if (fragment instanceof LogSpotFragment) {
+                            Log.i("MA", "setting location enabled on log spot to true");
                             ((LogSpotFragment) fragment).getmGoogleMap().setMyLocationEnabled(true);
                         }
                     }

@@ -7,6 +7,7 @@ import retrofit2.http.POST;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 import rx.Observable;
+import uk.co.tezk.trainspotter.model.ApiMessage;
 import uk.co.tezk.trainspotter.model.ClassNumbers;
 import uk.co.tezk.trainspotter.model.TrainDetail;
 import uk.co.tezk.trainspotter.model.TrainListItem;
@@ -33,7 +34,7 @@ public interface ITrainSpottingRetrofit {
     public Observable<TrainDetail> getTrainDetails(@Path("classId") String classNumber, @Path("trainId") String trainId) ;
 
     @POST(TRAIN_SPOTTING_BASE_URL+TRAIN_SIGHTING_API)
-    public Observable<String> addTrainSighting(
+    public Observable<ApiMessage> addTrainSighting(
             @Path("classId") String classNumber,
             @Path("trainId") String trainId,
             @Query("date") String date,
