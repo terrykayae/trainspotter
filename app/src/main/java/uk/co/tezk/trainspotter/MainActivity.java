@@ -40,6 +40,7 @@ import uk.co.tezk.trainspotter.model.Camera;
 import uk.co.tezk.trainspotter.model.Constant;
 import uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION;
 import uk.co.tezk.trainspotter.model.TrainDetail;
+import uk.co.tezk.trainspotter.model.TrainspotterSharedPreferences;
 import uk.co.tezk.trainspotter.parcel.TrainParcel;
 import uk.co.tezk.trainspotter.realm.ApiCache;
 import uk.co.tezk.trainspotter.view.ClassListFragment;
@@ -145,8 +146,8 @@ public class MainActivity extends AppCompatActivity
         } else {
             if (bundle != null && bundle.get("class") != null) {
                 Log.i("MA", "rebuilding parcelable");
-                float lat = Float.parseFloat((String) bundle.get("lat"));
-                float lon = Float.parseFloat((String) bundle.get("lon"));
+                String lat = (String) bundle.get("lat");
+                String lon = (String) bundle.get("lon");
                 String classNum = (String) bundle.get("class");
                 String trainNum = (String) bundle.get("num");
 
@@ -173,9 +174,6 @@ public class MainActivity extends AppCompatActivity
         if (currentAction == INITIALISING)
             currentAction = CLASS_LIST;
 
-        // Load fragment, but don't add to the backstack - if we did on every onResume, we get a stack full!
-        loadFragment(currentAction, false, null);
-
         // if we started camera from navigation drawer, we can't load in the new fragment until we get here to
         // Log the image!
         if (logFromImage) {
@@ -184,6 +182,9 @@ public class MainActivity extends AppCompatActivity
             params.put(IMAGES_KEY, mCamera.getFilename());
             logFromImage = false;
             loadFragment(LOG_SPOT, true, params);
+        } else {
+            // Load fragment, but don't add to the backstack - if we did on every onResume, we get a stack full!
+            loadFragment(currentAction, false, null);
         }
     }
 
@@ -191,7 +192,6 @@ public class MainActivity extends AppCompatActivity
     protected void onResume() {
         super.onResume();
         Log.i("MA", "onResume");
-
     }
 
     @Override
@@ -246,6 +246,23 @@ public class MainActivity extends AppCompatActivity
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
+        if (id == R.id.action_camera) {
+            if (currentAction == LOG_SPOT) {
+                Camera camera = new Camera(this,
+                        Constant.REQUEST_IMAGE_CAPTURE_FROM_SPOT,
+                        Constant.MY_PERMISSIONS_REQUEST_LOCATION_FROM_SPOT);
+                ((LogSpotFragment)fragment).setCamera(camera);
+                camera.takePicture();
+            } else {
+                mCamera = new Camera(this,
+                        Constant.REQUEST_IMAGE_CAPTURE_FROM_MAIN,
+                        Constant.MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_MAIN);
+                mCamera.takePicture();
+            }
+
+            return true;
+        }
+
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
@@ -272,6 +289,7 @@ public class MainActivity extends AppCompatActivity
                     })
                     .create()
                     .show();
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
@@ -284,10 +302,18 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.nav_camera) {
-            mCamera = new Camera(this,
-                    Constant.REQUEST_IMAGE_CAPTURE_FROM_MAIN,
-                    Constant.MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_MAIN);
-            mCamera.takePicture();
+            if (currentAction == LOG_SPOT) {
+                Camera camera = new Camera(this,
+                        Constant.REQUEST_IMAGE_CAPTURE_FROM_SPOT,
+                        Constant.MY_PERMISSIONS_REQUEST_LOCATION_FROM_SPOT);
+                ((LogSpotFragment)fragment).setCamera(camera);
+                camera.takePicture();
+            } else {
+                mCamera = new Camera(this,
+                        Constant.REQUEST_IMAGE_CAPTURE_FROM_MAIN,
+                        Constant.MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_MAIN);
+                mCamera.takePicture();
+            }
         } else if (id == R.id.nav_gallery) {
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("image/*");
@@ -329,11 +355,19 @@ public class MainActivity extends AppCompatActivity
         //fragment = null;
         Log.i("MA", "Loading fragment " + action + " with addToBackStack " + addToBackStack);
         Log.i("MA", "fragment = " + fragment + ", currentAction = " + currentAction);
+
         secondFragment = null;
         int secondViewId = 0;
-        if (params != null)
-            lastParams = params;
+        //if (params != null)
+        //    lastParams = params;
         // Check for multi fragment layout
+        if (params == null) {
+            params = new HashMap<>();
+            if (TrainspotterSharedPreferences.getClassNumber()!=null)
+                params.put(CLASS_NUM_KEY, TrainspotterSharedPreferences.getClassNumber());
+            if (TrainspotterSharedPreferences.getTrainNumber()!=null)
+                params.put(TRAIN_NUM_KEY, TrainspotterSharedPreferences.getTrainNumber());
+        }
         landscape = isLandscape(this);
         if (findViewById(R.id.landscapeLayout)!=null) {
             // Landscape view found, load fragment
@@ -344,7 +378,8 @@ public class MainActivity extends AppCompatActivity
 
 
         //setFabSpot();
-
+        if (params == null)
+            params = lastParams;
         switch (action) {
             case CLASS_LIST:
                 fragment = new ClassListFragment();
@@ -368,6 +403,7 @@ public class MainActivity extends AppCompatActivity
                     fragment = new LogSpotFragment();
                     if (params != null) {
                         if (params.get(IMAGES_KEY) != null) {
+                            // If we take a photo from anywhere other than log, start the Log with the image
                             Log.i("MA", "Setting logspot to show image : " + params.get(IMAGES_KEY));
                             ((LogSpotFragment) fragment).setImage(params.get(IMAGES_KEY));
                         } else {
@@ -375,7 +411,7 @@ public class MainActivity extends AppCompatActivity
                             ((LogSpotFragment) fragment).setTrainNum(params.get(TRAIN_NUM_KEY));
                         }
                     }
-                } else return;
+                } //else return;
                 break;
             case TRAIN_LIST:
                 if (!(fragment instanceof TrainListFragment)) {
@@ -504,6 +540,8 @@ public class MainActivity extends AppCompatActivity
         Map args = new HashMap();
         args.put(CLASS_NUM_KEY, classNum);
         if (landscape) {
+            if (!(secondFragment instanceof TrainListFragment))
+                secondFragment = new TrainListFragment();
             // Current action doesn't change as we still show class list in landscape, tell second fragment to load new class
             ((TrainListFragment) secondFragment).setShowTrainsForClass(classNum);
             ((TrainListFragment) secondFragment).reloadTrainList();
@@ -512,6 +550,7 @@ public class MainActivity extends AppCompatActivity
             loadFragment(currentAction, true, args);
         }
         Log.i("MA", "display trains in class " + classNum);
+        TrainspotterSharedPreferences.setClass(classNum);
         //View view = findViewById(R.id.trainListFragmentHolder);
     }
 
@@ -528,7 +567,9 @@ public class MainActivity extends AppCompatActivity
         if (landscape) {
             if (secondFragment instanceof TrainDetailFragment) {
                 // Current action doesn't change as we still show class list in landscape, tell second fragment to load new class
+                ((TrainDetailFragment) secondFragment).resetData();
                 ((TrainDetailFragment) secondFragment).setShowDetailsForTrain(classNum, trainNum);
+                ((TrainDetailFragment) secondFragment).fetchTrainData();
                 //((TrainDetailFragment)secondFragment).reloadTrainList();
             } else {
                 // need to load train list, add us to the right
@@ -543,10 +584,8 @@ public class MainActivity extends AppCompatActivity
         } else {
             loadFragment(TRAIN_DETAIL, true, args);
         }
-        Log.i("MA", "onShowTrainDetails display train " + classNum + ", " + trainNum
-
-
-        );
+        Log.i("MA", "onShowTrainDetails display train " + classNum + ", " + trainNum);
+        TrainspotterSharedPreferences.setTrain(classNum, trainNum);
     }
 
     @Override
@@ -573,11 +612,13 @@ public class MainActivity extends AppCompatActivity
                 // Load the "Spotting" fragment, save on the backstack
                 if (currentAction == TRAIN_DETAIL) {
                     // we're showing a train? If so, add log for that one
-                    TrainDetail currentTrain = ((TrainDetailFragment) fragment).getCurrentTrain();
-                    if (currentTrain != null && currentTrain.getTrain() != null) {
-                        params = new HashMap();
-                        params.put(CLASS_NUM_KEY, currentTrain.getTrain().getClass_());
-                        params.put(TRAIN_NUM_KEY, currentTrain.getTrain().getNumber());
+                    if (fragment instanceof TrainDetailFragment) {
+                        TrainDetail currentTrain = ((TrainDetailFragment) fragment).getCurrentTrain();
+                        if (currentTrain != null && currentTrain.getTrain() != null) {
+                            params = new HashMap();
+                            params.put(CLASS_NUM_KEY, currentTrain.getTrain().getClass_());
+                            params.put(TRAIN_NUM_KEY, currentTrain.getTrain().getNumber());
+                        }
                     }
                 }
                 loadFragment(CURRENT_ACTION.LOG_SPOT, true, params);

@@ -12,6 +12,7 @@ import android.util.Log;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import uk.co.tezk.trainspotter.MainActivity;
@@ -29,37 +30,23 @@ public class TrainspotterFirebaseMessagingService extends FirebaseMessagingServi
     public void onMessageReceived(RemoteMessage remoteMessage) {
         //super.onMessageReceived(remoteMessage);
         Log.i("firebaseMessaging", "message received");
-   //     Log.i("TSFMS", "Recevied message from : "+remoteMessage.getFrom());
-   //     Log.i("TSFMS", "body : "+remoteMessage.getNotification().getBody());
+        Log.i("TSFMS", "Recevied message from : "+remoteMessage.getFrom());
+        Log.i("TSFMS", "body : "+remoteMessage.getNotification().getBody());
         Log.i("TSFMS", ""+remoteMessage.getData());
-   //     for (String each : keySet) {
-   //         Log.i("TSFMS", "> "+each+" = "+remoteMessage.getData().get(each));
-   //     }
 
         sendNotification(remoteMessage.getNotification().getBody(), remoteMessage.getData());
     }
 
     private void sendNotification(String message, Map data) {
-        float latFloat = 0;
-        float lonFloat = 0;
-
+        Log.i("TSFMS","building notification");
         Intent intent = new Intent(this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         TrainParcel trainParcel;
         String latString = (String)data.get("lat");
         Log.i("tfms", "latString = "+latString+", "+latString.getClass());
-        if (latString!=null) {
-            latFloat = Float.parseFloat(latString);
-            Log.i("tfms", "Parsed and got " + latFloat);
-        } else {
-            Log.e("mess", "Missing lat");
-        }
+
         String lonString = (String)data.get("lon");
-        if (lonString!=null) {
-            lonFloat = Float.parseFloat(lonString);
-        } else {
-            Log.e("mess", "Missing lon");
-        }
+
         String trainClass = (String)data.get("class");
         String trainNum = (String)data.get("num");
 
@@ -69,8 +56,8 @@ public class TrainspotterFirebaseMessagingService extends FirebaseMessagingServi
         }
 
              trainParcel = new TrainParcel(
-                     latFloat,
-                     lonFloat,
+                     latString,
+                     lonString,
                      trainClass,
                      trainNum
             );
@@ -90,5 +77,19 @@ public class TrainspotterFirebaseMessagingService extends FirebaseMessagingServi
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.notify(0 , notificationBuilder.build());
 
+    }
+
+    @Override
+    public void handleIntent(Intent intent) {
+
+        Log.i("TFMS", "handling intent : "+intent.getExtras());
+        String body = intent.getExtras().getString("gcm.notification.body");
+        Map <String, String> map = new HashMap();
+        for (String each : intent.getExtras().keySet()) {
+            if (intent.getExtras().get(each) instanceof String)
+                map.put(each, intent.getExtras().getString(each));
+        }
+        sendNotification(body, map);
+        //super.handleIntent(intent);
     }
 }

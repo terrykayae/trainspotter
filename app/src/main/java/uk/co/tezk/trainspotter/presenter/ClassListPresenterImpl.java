@@ -1,5 +1,6 @@
 package uk.co.tezk.trainspotter.presenter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import io.realm.RealmResults;
@@ -73,6 +74,16 @@ public class ClassListPresenterImpl implements
         ClassNumbers classNumbers = new ClassNumbers();
         classNumbers.setClassNumbers(classList);
         apiCache.cacheClassList(Observable.just(classNumbers));
+        // Now inform the View we've got the initial list from the API
+        List <ClassDetails> newClassList = new ArrayList();
+        for (String each : classList) {
+            ClassDetails classDetails = new ClassDetails();
+            classDetails.setClassId(each);
+            newClassList.add(classDetails);
+        }
+
+        view.showClassList(newClassList);
+        view.onCompletedLoading();
     }
 
     @Override

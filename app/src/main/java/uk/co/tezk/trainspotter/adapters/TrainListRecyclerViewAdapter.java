@@ -58,6 +58,9 @@ public class TrainListRecyclerViewAdapter extends RecyclerView.Adapter <TrainLis
             // Hide the labels
             holder.tvTrainLastSpottedLabel.setVisibility(View.GONE);
             holder.tvTrainWhereLabel.setVisibility(View.GONE);
+            // make sure the image is the default
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+                holder.ivTrainSighting.setImageDrawable(context.getDrawable(android.R.drawable.ic_menu_view));
         } else {
             // find if we've spotted it and where last spotted
             boolean spotted = false;
@@ -78,8 +81,14 @@ public class TrainListRecyclerViewAdapter extends RecyclerView.Adapter <TrainLis
                 // Set the where to a name, if we know it, or location
                 if (mostRecent.getLocationName()!=null) {
                     holder.tvTrainWhere.setText(mostRecent.getLocationName());
+                    holder.tvTrainLastSpotted.setText(mostRecent.getDate());
+                    holder.tvTrainWhere.setVisibility(View.VISIBLE);
+                    holder.tvTrainLastSpotted.setVisibility(View.VISIBLE);
+                    holder.tvTrainWhereLabel.setVisibility(View.VISIBLE);
+                    holder.tvTrainLastSpottedLabel.setVisibility(View.VISIBLE);
                 } else {
                     holder.tvTrainWhere.setText(mostRecent.getLat()+", "+mostRecent.getLon());
+                    holder.tvTrainWhereLabel.setVisibility(View.VISIBLE);
                 }
             } else {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)

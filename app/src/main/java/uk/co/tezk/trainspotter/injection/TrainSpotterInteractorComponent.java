@@ -7,7 +7,7 @@ import uk.co.tezk.trainspotter.presenter.TrainDetailPresenterImpl;
 import uk.co.tezk.trainspotter.presenter.TrainListPresenterImpl;
 
 /**
- * Created by tezk on 12/05/17.
+ * Inject the modules into the classes
  */
 @Component(modules = TrainSpotterInteractorModule.class ,dependencies = NetworkComponent.class)
 public interface TrainSpotterInteractorComponent {

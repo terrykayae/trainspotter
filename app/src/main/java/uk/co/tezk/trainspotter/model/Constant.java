@@ -40,14 +40,21 @@ public class Constant {
         }
     };
     public static final String API_KEY = "gavffvfavaawjihwj0";
+    public static final String GEOCODER_API_KEY = "2edb0bfa07934ee4988ad7fd12ce3090";
 
     public static final String CURRENT_ACTION_KEY = "current_action";
     public static final String SECONDARY_ACTION_KEY = "secondary_action";
+
     public static final String TRAIN_SPOTTING_BASE_URL = "http://api.tezk.co.uk:8080/MyTrainApi/train/";
     public static final String CLASS_LIST_API = "classes";
     public static final String TRAIN_LIST_API = "class/{classId}";
     public static final String TRAIN_DETAIL_API = "engine/{classId}/{trainId}";
     public static final String TRAIN_SIGHTING_API = "spotted/{classId}/{trainId}";
+
+
+    //http://api.opencagedata.com/geocode/v1/json?q=53.0+-1.2&key=2edb0bfa07934ee4988ad7fd12ce3090
+    public static final String GEOCODE_BASE_URL = "http://api.opencagedata.com/";
+    public static final String GEOCODE_API = "geocode/v1/json";
 
     // keys for attribute maps
     public static final int MY_PERMISSIONS_REQUEST_LOCATION_FROM_SPOT = 22;
@@ -76,4 +83,18 @@ public class Constant {
 
     // Result of success from API
     public static final String SUCCESS_MESSAGE = "success";
+
+    public static final int DIESEL[][]={{1,70},{96,97}};
+    public static final int ELECTRIC[][]={{71,92}};
+    public static final int DMU [][]={{121,185}};
+    public static final int EMU [][]={{313,508},{507,508},{700,707},{800,801}};
+    public static final int DEMU [][]={{220,230}};
+    public static final int DVT [][]={{822,823}};
+
+    public static final String DIESEL_TITLE = "Diesel";
+    public static final String ELECTRIC_TITLE = "Electric";
+    public static final String DMU_TITLE = "Diesel multiple unit";
+    public static final String EMU_TITLE = "Electric multiple unit";
+    public static final String DEMU_TITLE = "Diesel electric multiple unit";
+    public static final String DVT_TITLE = "Driving van trailer";
 }

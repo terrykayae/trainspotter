@@ -8,9 +8,12 @@ import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmMigration;
 import io.realm.RealmSchema;
+import uk.co.tezk.trainspotter.injection.DaggerGeocoderInteractorComponent;
 import uk.co.tezk.trainspotter.injection.DaggerLocationComponent;
 import uk.co.tezk.trainspotter.injection.DaggerNetworkComponent;
 import uk.co.tezk.trainspotter.injection.DaggerTrainSpotterInteractorComponent;
+import uk.co.tezk.trainspotter.injection.GeocoderInteractorComponent;
+import uk.co.tezk.trainspotter.injection.GeocoderInteractorModule;
 import uk.co.tezk.trainspotter.injection.LocationComponent;
 import uk.co.tezk.trainspotter.injection.NetworkComponent;
 import uk.co.tezk.trainspotter.injection.TrainSpotterInteractorComponent;
@@ -28,6 +31,7 @@ public class TrainSpotterApplication extends Application {
     NetworkComponent networkComponent;
     TrainSpotterInteractorComponent trainSpotterInteractorComponent;
     LocationComponent locationComponent;
+    GeocoderInteractorComponent geocoderInteractorComponent;
 
     @Override
     public void onCreate() {
@@ -41,6 +45,10 @@ public class TrainSpotterApplication extends Application {
                 .trainSpotterInteractorModule(new TrainSpotterInteractorModule())
                 .build();
         locationComponent = DaggerLocationComponent.create();
+        geocoderInteractorComponent = DaggerGeocoderInteractorComponent.builder()
+                .networkComponent(networkComponent)
+                .geocoderInteractorModule(new GeocoderInteractorModule())
+                .build();
 
         // Initialise Realm
         Realm.init(this);
@@ -89,4 +97,6 @@ public class TrainSpotterApplication extends Application {
     public LocationComponent getLocationComponent() {
         return locationComponent;
     }
+
+    public GeocoderInteractorComponent getGeocoderInteractorComponent() { return geocoderInteractorComponent; }
 }

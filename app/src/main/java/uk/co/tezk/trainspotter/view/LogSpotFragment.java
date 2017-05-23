@@ -44,10 +44,13 @@ import uk.co.tezk.trainspotter.Utilitity;
 import uk.co.tezk.trainspotter.adapters.GalleryRecyclerViewAdapter;
 import uk.co.tezk.trainspotter.interfaces.TrainspotterDialogSupport;
 import uk.co.tezk.trainspotter.model.Camera;
+import uk.co.tezk.trainspotter.model.Constant;
 import uk.co.tezk.trainspotter.model.MyLocation;
 import uk.co.tezk.trainspotter.model.SightingDetails;
 import uk.co.tezk.trainspotter.network.Submitter;
 import uk.co.tezk.trainspotter.parcel.MapViewParcelable;
+import uk.co.tezk.trainspotter.presenter.GeocodePresenterImpl;
+import uk.co.tezk.trainspotter.presenter.IGeocodePresenter;
 import uk.co.tezk.trainspotter.presenter.ILocationUpdatePresenter;
 import uk.co.tezk.trainspotter.realm.RealmHandler;
 
@@ -68,6 +71,7 @@ import static uk.co.tezk.trainspotter.model.Constant.TRAIN_NUM_KEY;
 public class LogSpotFragment extends Fragment implements
         OnMapReadyCallback,
         ILocationUpdatePresenter.IView,
+        IGeocodePresenter.IView,
         GalleryRecyclerViewAdapter.OnImageClickListener {
     private Context context;
 
@@ -79,11 +83,15 @@ public class LogSpotFragment extends Fragment implements
 
     private List<String>imageList;
 
-    // Camera helper - deals with permissions for us
-    private Camera camera;
+    // Camera helper - deals with permissions for us, static so we retain reference
+    private static Camera camera;
+    // Allow mainActivity to set our camera if they receive the clickMessage
+    public void setCamera(Camera camera) { this.camera = camera; }
 
     @Inject
     MyLocation locationPresenter;
+
+    IGeocodePresenter.IPresenter geocodePresenter;
 
     //Holders for settings that might be passed in that will be needed later
     MapViewParcelable mapSettings;
@@ -103,6 +111,7 @@ public class LogSpotFragment extends Fragment implements
     @BindView(R.id.tvDate) TextView tvDate;
     @BindView(R.id.mapHolder) FrameLayout mapHolder;
     @BindView(R.id.rvSpotImages) RecyclerView rvGallery;
+    @BindView(R.id.etLocation) EditText etLocation;
 
     // Holder for the location, if we're allowed to fetch
     LatLng mLatLng;
@@ -140,14 +149,20 @@ public class LogSpotFragment extends Fragment implements
         locationPresenter.bind(this);
         locationPresenter.getLocation();
 
+        //bind the Geocoder
+        geocodePresenter = new GeocodePresenterImpl();
+        geocodePresenter.bind(this);
+
         //initialise the gallery adapter
         //if (galleryRecyclerViewAdapter == null)
         List <String> images = new ArrayList();
         Log.i("LSF", "onCreate, imageFilename = "+imageFilename);
         if (imageFilename!=null)
             images.add(imageFilename);
-        galleryRecyclerViewAdapter = new GalleryRecyclerViewAdapter(images, getContext(), this, true);
+        galleryRecyclerViewAdapter = new GalleryRecyclerViewAdapter(images, getContext(), this, false);
         imageList = images;
+
+        setRetainInstance(true);
     }
 
     @Override
@@ -180,6 +195,11 @@ public class LogSpotFragment extends Fragment implements
         rvGallery.setAdapter(galleryRecyclerViewAdapter);
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false);
         rvGallery.setLayoutManager(layoutManager);
+        if (rvGallery.getAdapter().getItemCount() > 0) {
+            rvGallery.setVisibility(View.VISIBLE);
+        } else {
+            rvGallery.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -227,6 +247,12 @@ public class LogSpotFragment extends Fragment implements
     }
 
     @Override
+    public void onDestroy() {
+        super.onDestroy();
+        geocodePresenter.unBind();
+    }
+
+    @Override
     public void onDetach() {
         super.onDetach();
     }
@@ -249,6 +275,7 @@ public class LogSpotFragment extends Fragment implements
         //Save the date and train number
         outState.putString(TRAIN_NUM_KEY, etTrainId.getText().toString());
         outState.putString(DATE_RECORDED_KEY, tvDate.getText().toString());
+
 
         // Save the images
         if (imageList !=null && imageList.size()>0) {
@@ -292,6 +319,9 @@ public class LogSpotFragment extends Fragment implements
                 mGoogleMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
             }
         this.mLatLng = latLng;
+
+        // Now try and get the geocoded location
+        geocodePresenter.getLocation((float)latLng.latitude, (float)latLng.longitude, Constant.GEOCODER_API_KEY);
     }
 
     // Called when FAB is pressed in main activity and we're active - return true if we've saved
@@ -303,6 +333,7 @@ public class LogSpotFragment extends Fragment implements
         // Create and store object
         SightingDetails sightingDetails = new SightingDetails();
         sightingDetails.setTrainId(etTrainId.getText().toString());
+        sightingDetails.setLocationName(etLocation.getText().toString());
         //sightingDetails.setTrainClass();
         sightingDetails.setDate(tvDate.getText().toString());
         sightingDetails.setTime(Utilitity.getTime(new Date()));
@@ -361,11 +392,20 @@ public class LogSpotFragment extends Fragment implements
         adapter.notifyItemRangeChanged(0, adapter.getItemCount());
         adapter.notifyDataSetChanged();
         // Save the filename to our list
-        imageList.add(imageFilename);
+        rvGallery.setVisibility(View.VISIBLE);
+
     }
 
     // If we're going to be showing an image
     public void setImage(String imageFilename) {
         this.imageFilename = imageFilename;
+    }
+
+    // Callback for our Geocode api
+    @Override
+    public void updateLocation(String details) {
+        etLocation.setText(details);
+
+
     }
 }

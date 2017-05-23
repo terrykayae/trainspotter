@@ -9,6 +9,7 @@ import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
+import uk.co.tezk.trainspotter.network.IGeocodeRetrofit;
 import uk.co.tezk.trainspotter.network.ITrainSpottingRetrofit;
 
 import static uk.co.tezk.trainspotter.model.Constant.TRAIN_SPOTTING_BASE_URL;
@@ -47,5 +48,10 @@ public class NetworkModule {
     @Provides
     public ITrainSpottingRetrofit provideApi(Retrofit retrofit) {
         return retrofit.create(ITrainSpottingRetrofit.class);
+    }
+
+    @Provides
+    public IGeocodeRetrofit provideGeocoder(Retrofit retrofit) {
+        return retrofit.create(IGeocodeRetrofit.class);
     }
 }

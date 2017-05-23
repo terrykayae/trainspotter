@@ -92,6 +92,7 @@ public class TrainListFragment extends Fragment implements
         if (savedInstanceState!=null && savedInstanceState.getString(Constant.CLASS_NUM_KEY)!=null) {
             setShowTrainsForClass(savedInstanceState.getString(Constant.CLASS_NUM_KEY));
         }
+        setRetainInstance(true);
     }
 
     @Override

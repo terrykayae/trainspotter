@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import uk.co.tezk.trainspotter.model.Constant;
+
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
@@ -135,5 +137,23 @@ public class Utilitity {
         if (info == null) return false;
         NetworkInfo.State network = info.getState();
         return (network == NetworkInfo.State.CONNECTED);
+    }
+
+    public static String getClassNameFromNumber(int number) {
+        int classes [][][]={Constant.DIESEL,Constant.ELECTRIC, Constant.DMU, Constant.EMU, Constant.DEMU};
+        String classNames [] = {Constant.DIESEL_TITLE, Constant.ELECTRIC_TITLE, Constant.DMU_TITLE, Constant.EMU_TITLE, Constant.DEMU_TITLE};
+
+        Log.i("Utility", "GetClassName for "+number);
+
+        String name = "Steam";
+        for (int c = 0; c< classes.length; c++) {
+            for (int l = 0; l<classes[c].length; l++) {
+                if (number >= classes[c][l][0] && number <= classes[c][l][1]) {
+                    name = classNames[c];
+                    break;
+                }
+            }
+        }
+        return name;
     }
 }

@@ -26,7 +26,7 @@
     <string name="title_activity_maps">Map</string>
     <string name="last_spotted">Last spotted :</string>
     <string name="where">Where :</string>
-    <string name="last_seen">Last seen :</string>
+    <string name="last_seen">Seen :</string>
     <string name="map_loading_please_wait">Map loading, please wait</string>
     <string name="none_reported">None reported</string>
     <string name="missing_train_number_error">You haven\'t set a train number!\nPress back to close without saving</string>
@@ -38,4 +38,5 @@
     <string name="class_label">Class :</string>
     <string name="loading">Loading</string>
     <string name="about">About</string>
+    <string name="location">Location :</string>
 </resources>

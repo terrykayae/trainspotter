@@ -12,6 +12,8 @@ import java.util.List;
 import uk.co.tezk.trainspotter.R;
 import uk.co.tezk.trainspotter.model.ClassDetails;
 
+import static uk.co.tezk.trainspotter.Utilitity.getClassNameFromNumber;
+
 /**
  * RecyclerView adapter for the class list - shows number, number of sightings and totals
  */
@@ -46,7 +48,11 @@ public class ClassListRecyclerViewAdapter extends RecyclerView.Adapter <ClassLis
 
     @Override
     public void onBindViewHolder(final ClassViewHolder holder, int position) {
-        holder.tvClassNum.setText(classesList.get(position).getClassId());
+        String classId = classesList.get(position).getClassId();
+        holder.classNumber = classId;
+        int classNum = Integer.parseInt(classId);
+        String className = getClassNameFromNumber(classNum);
+        holder.tvClassNum.setText(classId+" - "+className);
         int sightingCount = classesList.get(position).getSightingsRecorded()==null?0:classesList.get(position).getSightingsRecorded();
         if (sightingCount == 0) {
             holder.tvSightingCount.setText(context.getString(R.string.no_sightings_logged));
@@ -59,7 +65,7 @@ public class ClassListRecyclerViewAdapter extends RecyclerView.Adapter <ClassLis
             @Override
             public void onClick(View v) {
                 if (clickListener!=null) {
-                    clickListener.onItemClick(holder.tvClassNum.getText().toString(), false);
+                    clickListener.onItemClick(holder.classNumber, false);
                 }
 
             }
@@ -68,7 +74,7 @@ public class ClassListRecyclerViewAdapter extends RecyclerView.Adapter <ClassLis
             @Override
             public boolean onLongClick(View v) {
                 if (clickListener!=null) {
-                    clickListener.onItemClick(holder.tvClassNum.getText().toString(), true);
+                    clickListener.onItemClick(holder.classNumber, true);
                 }
 
                 return false;
@@ -77,6 +83,7 @@ public class ClassListRecyclerViewAdapter extends RecyclerView.Adapter <ClassLis
     }
 
     public class ClassViewHolder extends RecyclerView.ViewHolder {
+        public String classNumber;
         public TextView tvClassNum;
         public TextView tvSightingCount;
         View mView;

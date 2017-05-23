@@ -9,12 +9,12 @@ import android.util.Log;
  */
 
 public class TrainParcel implements Parcelable {
-    float lat;
-    float lon;
+    String lat;
+    String lon;
     String trainClass;
     String trainNum;
 
-    public TrainParcel(float lat, float lon, String trainClass, String trainNum) {
+    public TrainParcel(String lat, String lon, String trainClass, String trainNum) {
         this.lat = lat;
         this.lon = lon;
         this.trainClass = trainClass;
@@ -28,15 +28,15 @@ public class TrainParcel implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeFloat(lat);
-        dest.writeFloat(lon);
+        dest.writeString(lat);
+        dest.writeString(lon);
         dest.writeString(trainClass);
         dest.writeString(trainNum);
     }
 
     private TrainParcel(Parcel source) {
-        lat = source.readFloat();
-        lon = source.readFloat();
+        lat = source.readString();
+        lon = source.readString();
         trainClass = source.readString();
         trainNum = source.readString();
     }
@@ -53,19 +53,19 @@ public class TrainParcel implements Parcelable {
         }
     };
 
-    public float getLat() {
+    public String getLat() {
         return lat;
     }
 
-    public void setLat(float lat) {
+    public void setLat(String lat) {
         this.lat = lat;
     }
 
-    public float getLon() {
+    public String getLon() {
         return lon;
     }
 
-    public void setLon(float lon) {
+    public void setLon(String lon) {
         this.lon = lon;
     }
 

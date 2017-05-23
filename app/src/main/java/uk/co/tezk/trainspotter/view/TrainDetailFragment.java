@@ -105,7 +105,7 @@ public class TrainDetailFragment extends Fragment implements
     //Holders for settings that might be passed in that will be needed later
     MapViewParcelable mapSettings;
     // If we get sent a notification to display, store the item here and deal with in onDisplayDetails
-    TrainParcel trainParcel;
+    private static TrainParcel trainParcel;
 
     // Adapter for the gallery of images
     GalleryRecyclerViewAdapter galleryRecyclerViewAdapter;
@@ -183,6 +183,7 @@ public class TrainDetailFragment extends Fragment implements
             images.add(imageFilename);
         galleryRecyclerViewAdapter = new GalleryRecyclerViewAdapter(images, getContext(), this, false);
         imageList = images;
+        setRetainInstance(true);
     }
 
     @Override
@@ -198,12 +199,22 @@ public class TrainDetailFragment extends Fragment implements
         return view;
     }
 
+    public void resetData() {
+        // Clear the images so we can reload
+        imageList = new ArrayList<>();
+    }
+
+    public void fetchTrainData() {
+        // Trigger call to the presenter to fetch the details of the train
+        if (currentTrain != null)
+            presenter.retrieveData(currentTrain.getTrain().getClass_(), currentTrain.getTrain().getNumber());
+    }
+
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        if (currentTrain != null)
-            presenter.retrieveData(currentTrain.getTrain().getClass_(), currentTrain.getTrain().getNumber());
+        fetchTrainData();
         // Load the map
         FragmentManager fragmentManager = ((MainActivity) context).getSupportFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
@@ -221,9 +232,6 @@ public class TrainDetailFragment extends Fragment implements
     @Override
     public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
         super.onViewStateRestored(savedInstanceState);
-
-
-
 
         if (savedInstanceState != null) {
             String classNum = savedInstanceState.getString(Constant.CLASS_NUM_KEY);
@@ -387,15 +395,25 @@ public class TrainDetailFragment extends Fragment implements
         tvTrainDepot.setText(trainDetail.getTrain().getDepot());
         if (trainParcel != null) {
             // We're showing a notification, remove the sightings and add our own
+            Log.i("TDF","we got a parcel! "+trainParcel);
             List<SightingDetails> newSightings = new ArrayList();
-            SightingDetails sighting = new SightingDetails("Just now", trainParcel.getLat(), trainParcel.getLon());
+            SightingDetails sighting = new SightingDetails("Just now", Float.parseFloat(trainParcel.getLat()), Float.parseFloat(trainParcel.getLon()));
 
             newSightings.add(sighting);
             trainDetail.setSightings(newSightings);
         } else {
             //We don't want to show images for notifications, so only add here
-            Log.i("TDF", "Images = train : "+trainDetail.getImages());
+            if (trainDetail.getImages() == null || trainDetail.getImages().size() == 0) {
+                // No images in this train - if the train list is empty, hide the gallery
+                if (imageList.size() == 0) {
+                    rvGallery.setVisibility(View.GONE);
+                }
+            } else {
+                imageList.addAll(trainDetail.getImages());
+                rvGallery.setVisibility(View.VISIBLE);
 
+                rvGallery.setAdapter(new GalleryRecyclerViewAdapter(imageList, context, this, false));
+            }
 
         }
         if (trainDetail.getSightings() == null || trainDetail.getSightings().size() == 0) {
@@ -411,10 +429,17 @@ public class TrainDetailFragment extends Fragment implements
             if (latestSighting.getLocationName() != null && latestSighting.getLocationName().length() > 0) {
                 tvTrainWhere.setText(latestSighting.getLocationName());
             } else {
-                tvTrainWhere.setText(latestSighting.getLat() + ", " + latestSighting.getLon());
+                // Check if current tvLocation is blank or has , in it - we might have set to location name already
+                if (tvTrainWhere.getText().length() == 0)
+                    tvTrainWhere.setText(latestSighting.getLat() + ", " + latestSighting.getLon());
             }
         }
 
+        if (rvGallery.getAdapter().getItemCount()>0) {
+            rvGallery.setVisibility(View.VISIBLE);
+        } else {
+            rvGallery.setVisibility(View.GONE);
+        }
 
         // If the map was already loaded, add the markers
         if (mapReady)
