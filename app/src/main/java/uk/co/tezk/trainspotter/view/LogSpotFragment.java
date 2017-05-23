@@ -30,6 +30,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 
 import javax.inject.Inject;
 
@@ -41,6 +42,7 @@ import uk.co.tezk.trainspotter.R;
 import uk.co.tezk.trainspotter.TrainSpotterApplication;
 import uk.co.tezk.trainspotter.Utilitity;
 import uk.co.tezk.trainspotter.adapters.GalleryRecyclerViewAdapter;
+import uk.co.tezk.trainspotter.interfaces.TrainspotterDialogSupport;
 import uk.co.tezk.trainspotter.model.Camera;
 import uk.co.tezk.trainspotter.model.MyLocation;
 import uk.co.tezk.trainspotter.model.SightingDetails;
@@ -69,10 +71,13 @@ public class LogSpotFragment extends Fragment implements
         GalleryRecyclerViewAdapter.OnImageClickListener {
     private Context context;
 
+    // Holder to access progressDialog in MainActivity
+    private TrainspotterDialogSupport progressDialog;
+
     SupportMapFragment mSupportMapFragment;
     private GoogleMap mGoogleMap;
 
-    private ArrayList<String>imageList;
+    private List<String>imageList;
 
     // Camera helper - deals with permissions for us
     private Camera camera;
@@ -80,10 +85,11 @@ public class LogSpotFragment extends Fragment implements
     @Inject
     MyLocation locationPresenter;
 
-    //Holders for settings that might be passed in through onCreate that will be needed later
+    //Holders for settings that might be passed in that will be needed later
     MapViewParcelable mapSettings;
+    String imageFilename;
 
-    // Include getter for googlemap so mainActivity can enable location if needed after permission check
+    // Include getter for googlemap so mainActivity can enable location for us if needed after permission check
     public GoogleMap getmGoogleMap() {
         return mGoogleMap;
     }
@@ -93,17 +99,14 @@ public class LogSpotFragment extends Fragment implements
     }
 
     // The view items
-    @BindView(R.id.etTrainId)
-    EditText etTrainId;
-    @BindView(R.id.tvDate)
-    TextView tvDate;
-    @BindView(R.id.mapHolder)
-    FrameLayout mapHolder;
-    @BindView(R.id.rvSpotImages)
-    RecyclerView rvGallery;
+    @BindView(R.id.etTrainId) EditText etTrainId;
+    @BindView(R.id.tvDate) TextView tvDate;
+    @BindView(R.id.mapHolder) FrameLayout mapHolder;
+    @BindView(R.id.rvSpotImages) RecyclerView rvGallery;
 
     // Holder for the location, if we're allowed to fetch
     LatLng mLatLng;
+    // Adapter for the gallery of images
     GalleryRecyclerViewAdapter galleryRecyclerViewAdapter;
 
     String trainClass;
@@ -118,19 +121,65 @@ public class LogSpotFragment extends Fragment implements
     }
 
     @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        this.context = context;
+
+        mSupportMapFragment = SupportMapFragment.newInstance();
+        if (context instanceof TrainspotterDialogSupport)
+            progressDialog = (TrainspotterDialogSupport)context;
+    }
+
+    @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // Initiate Dagger injections
         TrainSpotterApplication.getApplication().getLocationComponent().inject(this);
 
-        //Ask for our location
+        //Ask for our location (Dagger injected)
         locationPresenter.bind(this);
         locationPresenter.getLocation();
 
         //initialise the gallery adapter
-        if (galleryRecyclerViewAdapter == null)
-            galleryRecyclerViewAdapter = new GalleryRecyclerViewAdapter(new ArrayList(), getContext(), this);
-        imageList = new ArrayList<>();
+        //if (galleryRecyclerViewAdapter == null)
+        List <String> images = new ArrayList();
+        Log.i("LSF", "onCreate, imageFilename = "+imageFilename);
+        if (imageFilename!=null)
+            images.add(imageFilename);
+        galleryRecyclerViewAdapter = new GalleryRecyclerViewAdapter(images, getContext(), this, true);
+        imageList = images;
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        // Inflate the layout for this fragment
+        View view = inflater.inflate(R.layout.fragment_log_spot, container, false);
+        FragmentManager fragmentManager = ((MainActivity) context).getSupportFragmentManager();
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        transaction.add(R.id.mapHolder, mSupportMapFragment);
+        mSupportMapFragment.getMapAsync(this);
+        transaction.commit();
+        // Initialise Butterknife
+        ButterKnife.bind(this, view);
+
+        return view;
+    }
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        if (trainNum != null) {
+            etTrainId.setText(trainNum);
+        }
+        // Set the date textview to today's date
+        tvDate.setText(new SimpleDateFormat("dd/MM/yyyy").format(new Date()));
+
+        //Initialise the gallery
+        rvGallery.setAdapter(galleryRecyclerViewAdapter);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false);
+        rvGallery.setLayoutManager(layoutManager);
     }
 
     @Override
@@ -157,47 +206,6 @@ public class LogSpotFragment extends Fragment implements
         }
     }
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        View view = inflater.inflate(R.layout.fragment_log_spot, container, false);
-
-        FragmentManager fragmentManager = ((MainActivity) context).getSupportFragmentManager();
-        FragmentTransaction transaction = fragmentManager.beginTransaction();
-        transaction.add(R.id.mapHolder, mSupportMapFragment);
-        mSupportMapFragment.getMapAsync(this);
-        transaction.commit();
-
-        return view;
-    }
-
-    @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        // Initialise Butterknife
-        ButterKnife.bind(this, view);
-        if (trainNum != null) {
-            etTrainId.setText(trainNum);
-        }
-        // Set the date textview to today's date
-        tvDate.setText(new SimpleDateFormat("dd/MM/yyyy").format(new Date()));
-
-        //Initialise the gallery
-        rvGallery.setAdapter(galleryRecyclerViewAdapter);
-        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false);
-        rvGallery.setLayoutManager(layoutManager);
-
-    }
-
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        this.context = context;
-
-        mSupportMapFragment = SupportMapFragment.newInstance();
-    }
-
     public void onResume() {
         super.onResume();
         locationPresenter.bind(this);
@@ -221,7 +229,6 @@ public class LogSpotFragment extends Fragment implements
     @Override
     public void onDetach() {
         super.onDetach();
-
     }
 
     @Override
@@ -245,7 +252,7 @@ public class LogSpotFragment extends Fragment implements
 
         // Save the images
         if (imageList !=null && imageList.size()>0) {
-            outState.putStringArrayList(IMAGES_KEY, imageList);
+            outState.putStringArrayList(IMAGES_KEY, (ArrayList)imageList);
         }
     }
 
@@ -272,11 +279,11 @@ public class LogSpotFragment extends Fragment implements
                     mapSettings.getBearing()
             );
             CameraUpdate cameraUpdate = CameraUpdateFactory.newCameraPosition(cameraPosition);
-            googleMap.moveCamera(cameraUpdate);
+            googleMap.animateCamera(cameraUpdate);
         }
     }
 
-    // Called by the location presenter to provide our lat and long, if we've set from settings, don't move camera. just store
+    // Called by the location presenter to provide our lat and long, if we've already moved from settings, don't move camera. just store
     @Override
     public void updatePosition(LatLng latLng) {
         if (mapSettings==null)
@@ -287,8 +294,8 @@ public class LogSpotFragment extends Fragment implements
         this.mLatLng = latLng;
     }
 
+    // Called when FAB is pressed in main activity and we're active - return true if we've saved
     public boolean handleSave() {
-        // Called when FAB is pressed in main activity and we're active - return true if we've saved
         if (tvDate.getText().length() == 0 || etTrainId.getText().length() == 0) {
             Toast.makeText(getContext(), getResources().getText(R.string.missing_train_number_error), Toast.LENGTH_LONG).show();
             return false;
@@ -296,12 +303,13 @@ public class LogSpotFragment extends Fragment implements
         // Create and store object
         SightingDetails sightingDetails = new SightingDetails();
         sightingDetails.setTrainId(etTrainId.getText().toString());
+        //sightingDetails.setTrainClass();
         sightingDetails.setDate(tvDate.getText().toString());
+        sightingDetails.setTime(Utilitity.getTime(new Date()));
         // We received a location, or one was set by user
         if (mLatLng != null) {
             sightingDetails.setLat((float) mLatLng.latitude);
             sightingDetails.setLon((float) mLatLng.longitude);
-
         }
         // Save the images
         RealmHandler.getInstance().persistImageDetails(imageList, sightingDetails);
@@ -312,6 +320,7 @@ public class LogSpotFragment extends Fragment implements
         return true;
     }
 
+    // Handler for the date textfield = show a calendar and update
     @OnClick(R.id.tvDate)
     void showCalendar() {
         CalendarDatePickerDialogFragment cdp = new CalendarDatePickerDialogFragment()
@@ -343,15 +352,20 @@ public class LogSpotFragment extends Fragment implements
     // Called by MainActivity when it receives notification that our image is ready
     public void onImageReady() {
         String imageFilename = camera.getFilename();
+        Log.i("LSF", "image ready : "+imageFilename);
         // Ask the camera to notify the gallery
         camera.addToGallery();
-        Log.i("LSF", "image " + imageFilename + " is ready for access");
-        // Notify the adapter so it can display the image
+        // update and notify the gallery adapter so it can display the image
         GalleryRecyclerViewAdapter adapter = ((GalleryRecyclerViewAdapter) rvGallery.getAdapter());
         adapter.addImageFromFile(imageFilename);
         adapter.notifyItemRangeChanged(0, adapter.getItemCount());
         adapter.notifyDataSetChanged();
         // Save the filename to our list
         imageList.add(imageFilename);
+    }
+
+    // If we're going to be showing an image
+    public void setImage(String imageFilename) {
+        this.imageFilename = imageFilename;
     }
 }

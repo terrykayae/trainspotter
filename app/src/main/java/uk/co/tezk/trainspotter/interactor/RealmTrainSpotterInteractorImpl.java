@@ -10,6 +10,7 @@ import io.realm.RealmResults;
 import rx.Observable;
 import uk.co.tezk.trainspotter.model.ClassDetails;
 import uk.co.tezk.trainspotter.model.ClassNumbers;
+import uk.co.tezk.trainspotter.model.ImageDetails;
 import uk.co.tezk.trainspotter.model.SightingDetails;
 import uk.co.tezk.trainspotter.model.TrainDetail;
 import uk.co.tezk.trainspotter.model.TrainListItem;
@@ -30,15 +31,15 @@ public class RealmTrainSpotterInteractorImpl implements ITrainSpotterInteractor 
         if (realm == null)
             realm = Realm.getDefaultInstance();
 
-        Log.i("RTSI", "realm class Count = "+realm.where(ClassDetails.class).count());
+        Log.i("RTSI", "realm class Count = " + realm.where(ClassDetails.class).count());
 
         RealmResults<ClassDetails> results = realm.where(ClassDetails.class).findAll();
         // Nothing in database, return empty observable
-        if (results.size()==0)
+        if (results.size() == 0)
             return Observable.empty();
         // Need to return an observable that is an instance of ClassNumbers with a list of Strings
         ClassNumbers classNumbers = new ClassNumbers();
-        List <String> classNumberList = new ArrayList();
+        List<String> classNumberList = new ArrayList();
         classNumbers.setClassNumbers(classNumberList);
         for (ClassDetails each : results) {
             classNumberList.add(each.getClassId());
@@ -51,16 +52,16 @@ public class RealmTrainSpotterInteractorImpl implements ITrainSpotterInteractor 
         if (realm == null)
             realm = Realm.getDefaultInstance();
 
-        Log.i("RTSI", "realm train Count = "+realm.where(TrainListItem.class).count());
+        Log.i("RTSI", "realm train Count = " + realm.where(TrainListItem.class).count());
 
         RealmResults<TrainListItem> results = realm.where(TrainListItem.class).equalTo("_class", classNumber).findAll();
         // Nothing in database, return empty observable
-        Log.i("RTSI", "Searching for \""+classNumber+"\" found "+results.size());
-        if (results.size()==0)
+        Log.i("RTSI", "Searching for \"" + classNumber + "\" found " + results.size());
+        if (results.size() == 0)
             return Observable.empty();
         // Need to return an Observable that has a list of Trains
         // TODO : Check if this crashes
-        final List <TrainListItem> newList = new ArrayList<>();
+        final List<TrainListItem> newList = new ArrayList<>();
         for (TrainListItem each : results) {
             newList.add(each);
         }
@@ -70,9 +71,39 @@ public class RealmTrainSpotterInteractorImpl implements ITrainSpotterInteractor 
     }
 
     @Override
-    public Observable<TrainDetail> getTrainDetails(String trainId, String classNumber) {
-        // Cannot cache this
-        throw new RuntimeException("Cannot implement getTrainDetails() using Realm data - use TrainSpotterInteractorImpl to fetch from API");
+    public Observable<TrainDetail> getTrainDetails(String classNumber, String trainId) {
+        realm = Realm.getDefaultInstance();
+
+        RealmResults <TrainListItem> results = realm.where(TrainListItem.class).findAll();
+        Log.i("RTSI", "Trains found:");
+
+        TrainListItem result = realm.where(TrainListItem.class)
+                .equalTo("_class", classNumber)
+                .equalTo("number", trainId)
+                .findFirst();
+        // Nothing in database, return empty observable
+        Log.i("RTSI", "Searching for \"" + classNumber + ", " + trainId + "\" found " + result);
+        if (result == null)
+            return Observable.empty();
+
+        // Fetch any sightings and images!
+        TrainDetail trainDetail = new TrainDetail();
+        trainDetail.setTrain(result);
+        trainDetail.setSightings(
+                realm.where(SightingDetails.class)
+                .equalTo("trainId", trainId)
+                .equalTo("trainClass", classNumber)
+                .findAll());
+        trainDetail.setImagesFromImageDetails(
+                realm.where(ImageDetails.class)
+                .equalTo("trainNum", trainId)
+     //           .equalTo("classNum", classNumber)
+                .findAll());
+
+        Log.i("RTSII", "images saved = "+realm.where(ImageDetails.class).count());
+        Log.i("RTSII", "images saved = "+realm.where(ImageDetails.class).findAll());
+
+        return Observable.just(trainDetail);
     }
 
     @Override

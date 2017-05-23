@@ -18,7 +18,7 @@
         android:layout_height="120dp"
         android:paddingTop="@dimen/nav_header_vertical_spacing"
         android:scaleType="fitCenter"
-        app:srcCompat="@drawable/train"
+        app:srcCompat="@drawable/high_speed_train"
         />
 
     <TextView

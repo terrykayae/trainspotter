@@ -26,6 +26,8 @@ public class ApiCache {
 
     CompositeSubscription compositeSubscription = new CompositeSubscription();
 
+    ApiBinder apiBinder;
+
     public static synchronized ApiCache getInstance() {
         if (apiCache == null) {
             apiCache = new ApiCache();
@@ -40,6 +42,7 @@ public class ApiCache {
                 // Data is currently being persisted, wait. Very messy. TODO: implement better soution
                 do {
                     try {
+                        notifyAll();
                         Thread.sleep(500);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -102,6 +105,7 @@ public class ApiCache {
                 // Data is currently being persisted, wait. Very messy. TODO: implement better soution
                 do {
                     try {
+                        notifyAll();
                         Thread.sleep(500);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -113,12 +117,16 @@ public class ApiCache {
             Observable<Integer> count = trainsObservable.count();
 
             Log.i("API", "Carrying out save");
+            final String[] classNum = new String[1] ;
+            final int[] numTrains = new int[1];
             compositeSubscription.add(trainsObservable
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .flatMap(new Func1<List<TrainListItem>, Observable<TrainListItem>>() {
                         @Override
                         public Observable<TrainListItem> call(List<TrainListItem> trainListItems) {
+                            classNum[0] = trainListItems.get(0).getClass_();
+                            numTrains[0] = trainListItems.size();
                             return Observable.from(trainListItems);
                         }
                     })
@@ -126,7 +134,19 @@ public class ApiCache {
                         @Override
                         public void onCompleted() {
                             Log.i("API", "save trains complete");
+                            // Update the class total
+                            Realm.getDefaultInstance().executeTransaction(new Realm.Transaction() {
+                                @Override
+                                public void execute(Realm realm) {
+                                    ClassDetails details = realm.where(ClassDetails.class)
+                                            .equalTo("classId", classNum[0])
+                                            .findFirst();
+                                    details.setTotalTrains(numTrains[0]);
+                                }
+                            });
                             realm = null;
+                            if (apiBinder!=null)
+                                apiBinder.onApiCompleted();
                         }
 
                         @Override
@@ -143,7 +163,10 @@ public class ApiCache {
                             realm.executeTransaction(new Realm.Transaction() {
                                 @Override
                                 public void execute(Realm realm) {
-                                    if (realm.where(TrainListItem.class).equalTo("_class", trainListItem.getClass_()).equalTo("number", trainListItem.getNumber())
+                                    // Only add if not already there! No primary key so need to check manually
+                                    if (realm.where(TrainListItem.class)
+                                            .equalTo("_class", trainListItem.getClass_())
+                                            .equalTo("number", trainListItem.getNumber())
                                             .count() <= 0)
                                         realm.copyToRealm(trainListItem);
 
@@ -159,5 +182,14 @@ public class ApiCache {
             compositeSubscription.unsubscribe();
         compositeSubscription = null;
         apiCache = null;
+    }
+
+    public void bind(ApiBinder apiBinder) {
+        this.apiBinder = apiBinder;
+    }
+
+    // Interface calling class must implement in order to be notified
+    public interface ApiBinder {
+        public void onApiCompleted() ;
     }
 }

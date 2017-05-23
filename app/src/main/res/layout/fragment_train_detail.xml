@@ -14,6 +14,7 @@
             android:layout_height="wrap_content"
             android:background="@color/bpWhite"
             android:padding="8dp"
+            android:outlineProvider="background"
             android:layout_margin="@dimen/fragment_margin">
 
             <TextView
@@ -24,7 +25,7 @@
                 android:layout_column="0"
                 android:layout_marginBottom="8dp"
                 android:layout_row="0"
-                android:text="Class :" />
+                android:text="@string/class_label" />
 
             <TextView
                 android:id="@+id/tvClass"
@@ -32,8 +33,9 @@
                 android:layout_height="wrap_content"
                 android:layout_column="1"
                 android:layout_row="0"
-                android:ems="10"
-                android:text="TextView" />
+                android:ems="7"
+
+                android:text="@string/loading" />
 
             <TextView
                 android:id="@+id/tvTrainNumberLabel"
@@ -51,6 +53,7 @@
                 android:layout_height="wrap_content"
                 android:layout_column="3"
                 android:layout_row="0"
+                android:ems="7"
                  />
 
             <TextView
@@ -69,8 +72,8 @@
                 android:layout_height="wrap_content"
                 android:layout_column="1"
                 android:layout_row="1"
-                android:ems="7"
-                android:inputType="textPersonName" />
+                android:inputType="textPersonName"
+                android:ems="7"/>
 
             <TextView
                 android:id="@+id/tvTrainLiveryLabel"
@@ -80,7 +83,8 @@
                 android:layout_column="2"
                 android:layout_row="1"
                 android:layout_marginBottom="8dp"
-                android:text="@string/livery" />
+                android:text="@string/livery"
+                />
 
             <TextView
                 android:id="@+id/tvTrainLivery"
@@ -88,7 +92,7 @@
                 android:layout_height="wrap_content"
                 android:layout_column="3"
                 android:layout_row="1"
-                android:inputType="textPersonName" />
+                android:ems="7"/>
 
 
             <TextView
@@ -107,7 +111,11 @@
                 android:layout_height="wrap_content"
                 android:layout_column="1"
                 android:layout_row="2"
-                android:inputType="textPersonName" />
+                android:layout_weight="1"
+                android:ellipsize="none"
+                android:maxLines="3"
+                android:scrollHorizontally="false"
+                android:ems="7"/>
 
             <TextView
                 android:id="@+id/tvTrainDepotLabel"
@@ -125,7 +133,7 @@
                 android:layout_height="wrap_content"
                 android:layout_column="3"
                 android:layout_row="2"
-                android:ems="10"/>
+                android:ems="7"/>
 
             <TextView
                 android:id="@+id/tvTrainLastSpottedLabel"
@@ -144,7 +152,7 @@
                 android:layout_column="1"
                 android:layout_row="3"
                 android:layout_marginBottom="8dp"
-                android:inputType="textPersonName" />
+                android:ems="7"/>
 
             <TextView
                 android:id="@+id/tvTrainWhereLabel"
@@ -160,13 +168,14 @@
                 android:layout_height="wrap_content"
                 android:layout_column="3"
                 android:layout_row="3"
+                android:ems="7"
                 />
         </GridLayout>
 
         <android.support.v7.widget.RecyclerView
-            android:id="@+id/trainDetailImageRecyclerView"
+            android:id="@+id/rvGallery"
             android:layout_width="match_parent"
-            android:layout_height="80dp"
+            android:layout_height="130dp"
             android:layout_below="@+id/gridLayout"
             android:layout_marginBottom="@dimen/fragment_margin"
             android:layout_marginLeft="@dimen/fragment_margin"
@@ -177,7 +186,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
 
-            android:layout_below="@+id/trainDetailImageRecyclerView">
+            android:layout_below="@+id/rvGallery">
 
             <TextView
                 android:layout_width="wrap_content"

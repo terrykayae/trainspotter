@@ -22,6 +22,8 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import uk.co.tezk.trainspotter.R;
 import uk.co.tezk.trainspotter.adapters.TrainListRecyclerViewAdapter;
+import uk.co.tezk.trainspotter.interfaces.TrainspotterDialogSupport;
+import uk.co.tezk.trainspotter.model.Constant;
 import uk.co.tezk.trainspotter.model.TrainDetail;
 import uk.co.tezk.trainspotter.model.TrainListItem;
 import uk.co.tezk.trainspotter.presenter.ITrainListPresenter;
@@ -41,6 +43,9 @@ public class TrainListFragment extends Fragment implements
 
     private OnTrainListFragmentInteractionListener mListener;
 
+    // Holder to access progressDialog in MainActivity
+    private TrainspotterDialogSupport progressDialog;
+
     List <TrainListItem> mTrainList;
     private String showTrainsForClass;
 
@@ -53,7 +58,8 @@ public class TrainListFragment extends Fragment implements
     }
 
     public void setShowTrainsForClass(String showTrainsForClass) {
-        this.showTrainsForClass = showTrainsForClass;
+        if (showTrainsForClass!=null)
+            this.showTrainsForClass = showTrainsForClass;
         Log.i("TLF", "Setting class to "+showTrainsForClass);
     }
 
@@ -68,12 +74,6 @@ public class TrainListFragment extends Fragment implements
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-    }
-
-    @Override
     public void onAttach(Context context) {
         super.onAttach(context);
         if (context instanceof OnTrainListFragmentInteractionListener) {
@@ -82,7 +82,21 @@ public class TrainListFragment extends Fragment implements
             throw new RuntimeException(context.toString()
                     + " must implement OnTrainListFragmentInteractionListener");
         }
+        if (context instanceof TrainspotterDialogSupport)
+            progressDialog = (TrainspotterDialogSupport)context;
+    }
 
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (savedInstanceState!=null && savedInstanceState.getString(Constant.CLASS_NUM_KEY)!=null) {
+            setShowTrainsForClass(savedInstanceState.getString(Constant.CLASS_NUM_KEY));
+        }
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
     }
 
     @Override
@@ -90,6 +104,7 @@ public class TrainListFragment extends Fragment implements
                              Bundle savedInstanceState) {
         presenter = new TrainListPresenterImpl();
         presenter.bind(this);
+
        // Inflate the layout for this fragment
         int layout = forcePortrait?R.layout.fragment_train_list_subfragment:R.layout.fragment_train_list;
         return inflater.inflate(layout, container, false);
@@ -100,15 +115,34 @@ public class TrainListFragment extends Fragment implements
         super.onViewCreated(view, savedInstanceState);
         // Initialise Butterknife anotations
         ButterKnife.bind(this, view);
+
         trainListRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         Log.i("TLF", "Get trains for "+showTrainsForClass);
-       // reloadTrainList();
+        reloadTrainList();
+
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        reloadTrainList();
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        // Save the current class we're viewing
+        outState.putString(Constant.CLASS_NUM_KEY, showTrainsForClass);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
+        super.onViewStateRestored(savedInstanceState);
+
+        //restore the class we were viewing
+        if (savedInstanceState!=null && savedInstanceState.getString(Constant.CLASS_NUM_KEY)!=null) {
+            setShowTrainsForClass(savedInstanceState.getString(Constant.CLASS_NUM_KEY));
+            reloadTrainList();
+        }
     }
 
     @Override
@@ -128,10 +162,7 @@ public class TrainListFragment extends Fragment implements
             if (showTrainsForClass==null || showTrainsForClass.equals("0")) {
                 return;
             }
-            Log.i("TLF", "rltl, calling retrieveData "+showTrainsForClass);
             presenter.retrieveData(showTrainsForClass);
-        } else {
-            Log.i("TLF", "rltl, mTrainList.size = "+mTrainList.size());
         }
     }
 
@@ -157,17 +188,18 @@ public class TrainListFragment extends Fragment implements
 
     @Override
     public void onStartLoading() {
-        Log.i("TLF", "Loading data");
+        progressDialog.startProgressDialog();
     }
 
     @Override
     public void onErrorLoading(String message) {
         Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
+        progressDialog.stopProgressDialog();
     }
 
     @Override
     public void onCompletedLoading() {
-        Log.i("TLF", "Completed loading");
+        progressDialog.stopProgressDialog();
     }
 
     @Override

@@ -31,17 +31,26 @@ public class GalleryRecyclerViewAdapter extends RecyclerView.Adapter<GalleryRecy
     private OnImageClickListener imageClickListener;
     private int imageViewHeight = 120;
 
-    public GalleryRecyclerViewAdapter(List<String> imagePaths, Context context, OnImageClickListener imageClickListener) {
+    public GalleryRecyclerViewAdapter(List<String> imagePaths, Context context, OnImageClickListener imageClickListener, boolean addTakePhoto) {
         // The first item in the list should always be a "Add photo" button
         this.images = new ArrayList<>();
         this.imageClickListener = imageClickListener;
-        GalleryDrawable addPhotoButton = new GalleryDrawable();
-        addPhotoButton.setUrl(TAKE_PHOTO);
-        //addPhotoButton.setDrawable(context.getResources().getDrawable(R.drawable.camera));
-        addPhotoButton.setBitmap(BitmapFactory.decodeResource(context.getResources(), R.drawable.camera));
-        this.images.add(addPhotoButton);
+        if (addTakePhoto) {
+            GalleryDrawable addPhotoButton = new GalleryDrawable();
+            // Add image to the images list
+            addPhotoButton.setUrl(TAKE_PHOTO);
+            //addPhotoButton.setDrawable(context.getResources().getDrawable(R.drawable.camera));
+            addPhotoButton.setBitmap(BitmapFactory.decodeResource(context.getResources(), R.drawable.camera));
+            this.images.add(addPhotoButton);
+        }
         // TODO : Get drawables for the list of images
         this.context = context;
+        // Now add all the images from the list...
+        if (imagePaths!=null) {
+            for (String each : imagePaths) {
+                addImageFromFile(each);
+            }
+        }
         Log.i("GRVA", "constructor called...");
     }
 

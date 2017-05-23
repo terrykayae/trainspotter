@@ -13,7 +13,7 @@ import uk.co.tezk.trainspotter.R;
 import uk.co.tezk.trainspotter.model.ClassDetails;
 
 /**
- * Created by tezk on 12/05/17.
+ * RecyclerView adapter for the class list - shows number, number of sightings and totals
  */
 
 public class ClassListRecyclerViewAdapter extends RecyclerView.Adapter <ClassListRecyclerViewAdapter.ClassViewHolder> {

@@ -8,18 +8,20 @@ import java.util.List;
 import io.realm.Realm;
 import io.realm.RealmResults;
 import uk.co.tezk.trainspotter.Utilitity;
+import uk.co.tezk.trainspotter.model.ClassDetails;
 import uk.co.tezk.trainspotter.model.ImageDetails;
 import uk.co.tezk.trainspotter.model.SightingDetails;
+import uk.co.tezk.trainspotter.model.TrainListItem;
 
 /**
- * Created by tezk on 15/05/17.
+ * Deal with Realm interactions
  */
 
 public class RealmHandler {
     private static RealmHandler realmHandler;
 
+    // Implement singleton pattern
     private RealmHandler() {
-
     }
 
     public static RealmHandler getInstance() {
@@ -29,24 +31,60 @@ public class RealmHandler {
         return realmHandler;
     }
 
+    // Save sightings
     public SightingDetails persistSightingDetails(final SightingDetails sightingDetails) {
-        SightingDetails toRealm;
-                // If we don't know train class, set to 0
-                if (sightingDetails.getTrainClass()==null)
-                    sightingDetails.setTrainClass("0");
-                Realm instance = Realm.getDefaultInstance();
-                instance.executeTransaction(new Realm.Transaction()
+        // If we don't know train class, try and find, or set to 0
+        if (sightingDetails.getTrainClass() == null) {
+            Log.i("RH", "sightingdetails.trainclass == null");
+            RealmResults<TrainListItem> results = Realm.getDefaultInstance()
+                    .where(TrainListItem.class)
+                    .equalTo("number", sightingDetails.getTrainId())
+                    .findAll();
+            Log.i("RH", "results = "+results);
+            if (results.size()>0) {
+                Log.i("RH", "class is "+results.get(0).getClass_());
+            } else {
+                Log.i("RH", "none found?");
+            }
+            if (results.size() == 1) {
+                sightingDetails.setTrainClass(results.get(0).getClass_());
+            } else {
+                sightingDetails.setTrainClass("0");
+            }
+        }
+        Realm instance = Realm.getDefaultInstance();
+        Log.i("RH", "Executing transaction");
+        instance.executeTransaction(new Realm.Transaction()
 
-                {
-                    @Override
-                    public void execute(Realm realm) {
-                        SightingDetails toRealm = realm.copyToRealm(sightingDetails);
-                    }
-                });
+        {
+            @Override
+            public void execute(Realm realm) {
+              /*  long currentTrainSightings = realm.where(SightingDetails.class)
+                        .equalTo("trainId", sightingDetails.getTrainId())
+                        .equalTo("trainClass", sightingDetails.getTrainClass())
+                        .count();*/
+
+                long trainsInClassSpotted = realm.where(SightingDetails.class)
+                        .equalTo("trainClass", sightingDetails.getTrainClass())
+                        .distinct("trainId")
+                        .size();
+                Log.i("RH", "trains in class spotted = "+trainsInClassSpotted);
+                Log.i("RH", "class = "+realm.where(ClassDetails.class)
+                        .equalTo("classId", sightingDetails.getTrainClass())
+                        .findFirst());
+
+                realm.where(ClassDetails.class)
+                        .equalTo("classId", ""+sightingDetails.getTrainClass())
+                        .findFirst()
+                        .setSightingsRecorded((int) trainsInClassSpotted);
+
+                SightingDetails toRealm = realm.copyToRealm(sightingDetails);
+            }
+        });
 
 
-            Log.i("RH", "Saved, currently logged sightings : "+Realm.getDefaultInstance().where(SightingDetails.class).count());
-            return sightingDetails;
+        Log.i("RH", "Saved, currently logged sightings : " + Realm.getDefaultInstance().where(SightingDetails.class).count());
+        return sightingDetails;
     }
 
     public RealmResults<SightingDetails> getSightings(String classNum, String trainNum) {
@@ -57,7 +95,7 @@ public class RealmHandler {
     }
 
     public void persistImageDetails(final List<String> imageFilenames, final SightingDetails sightingDetails) {
-        if (imageFilenames!=null && imageFilenames.size()>0) {
+        if (imageFilenames != null && imageFilenames.size() > 0) {
             final Realm instance = Realm.getDefaultInstance();
             instance.executeTransaction(new Realm.Transaction() {
                 @Override
@@ -71,7 +109,7 @@ public class RealmHandler {
                         imageDetails.setTakenByUs(true);
                         imageDetails.setTrainNum(sightingDetails.getTrainId());
                         imageDetails.setTime(Utilitity.getTime(new Date()));
-                        realm.copyToRealmOrUpdate(imageDetails);
+                        realm.copyToRealm(imageDetails);
                     }
                 }
             });
@@ -79,8 +117,12 @@ public class RealmHandler {
         }
     }
 
-    public RealmResults <ImageDetails>getImageDetails(String classNum, String trainNum) {
+    public RealmResults<ImageDetails> getImageDetails(String classNum, String trainNum) {
         Realm realm = Realm.getDefaultInstance();
         return realm.where(ImageDetails.class).equalTo("trainId", trainNum).findAll();
+    }
+
+    public RealmResults<ClassDetails> getClassList() {
+        return Realm.getDefaultInstance().where(ClassDetails.class).findAll();
     }
 }

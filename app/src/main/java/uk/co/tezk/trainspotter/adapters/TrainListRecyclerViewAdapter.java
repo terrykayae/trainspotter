@@ -52,8 +52,12 @@ public class TrainListRecyclerViewAdapter extends RecyclerView.Adapter <TrainLis
         List <SightingDetails> sightings = trainList.get(position).getSightings();
         if (sightings == null || sightings.size()==0) {
             // No sightings yet reported, hide the last sighting text views
+
             holder.tvTrainLastSpotted.setVisibility(View.GONE);
             holder.tvTrainWhere.setVisibility(View.GONE);
+            // Hide the labels
+            holder.tvTrainLastSpottedLabel.setVisibility(View.GONE);
+            holder.tvTrainWhereLabel.setVisibility(View.GONE);
         } else {
             // find if we've spotted it and where last spotted
             boolean spotted = false;
@@ -77,6 +81,9 @@ public class TrainListRecyclerViewAdapter extends RecyclerView.Adapter <TrainLis
                 } else {
                     holder.tvTrainWhere.setText(mostRecent.getLat()+", "+mostRecent.getLon());
                 }
+            } else {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+                    holder.ivTrainSighting.setImageDrawable(context.getDrawable(android.R.drawable.ic_menu_view));
             }
         }
         holder.tvTrainNumber.setText(trainListItem.getNumber());
@@ -117,6 +124,10 @@ public class TrainListRecyclerViewAdapter extends RecyclerView.Adapter <TrainLis
         @BindView (R.id.tvTrainLastSpotted)TextView tvTrainLastSpotted;
         @BindView (R.id.tvTrainWhere)TextView tvTrainWhere;
         @BindView (R.id.ivTrainSighting) ImageView ivTrainSighting;
+
+        // holders for the labels that we may want to hide
+        @BindView (R.id.tvTrainLastSpottedLabel) TextView tvTrainLastSpottedLabel;
+        @BindView(R.id.tvTrainWhereLabel) TextView tvTrainWhereLabel;
 
         public TrainViewHolder(View itemView) {
             super(itemView);

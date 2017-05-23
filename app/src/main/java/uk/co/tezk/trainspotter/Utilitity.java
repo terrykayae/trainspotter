@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
@@ -19,7 +21,7 @@ import java.util.Date;
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
-import static uk.co.tezk.trainspotter.model.Constant.MY_PERMISSIONS_REQUEST_LOCATION_FROM_SPOT;
+import static uk.co.tezk.trainspotter.TrainSpotterApplication.getApplication;
 
 /**
  * Utility helper classes
@@ -60,7 +62,7 @@ public class Utilitity {
                 // No need to prompt the user, just ask for permission
                 ActivityCompat.requestPermissions((MainActivity) context,
                         new String[]{ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION},
-                        MY_PERMISSIONS_REQUEST_LOCATION_FROM_SPOT);
+                        permissionCallbackCode);
             }
         } else {
             return true;
@@ -123,5 +125,15 @@ public class Utilitity {
 
     public static String getTime(Date date) {
         return new SimpleDateFormat("HH:mm:ss").format(date);
+    }
+
+    public static boolean isNetworkAvailable() {
+        Context context = TrainSpotterApplication.getApplication();
+                // return true if network is connecte
+        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo info = cm.getActiveNetworkInfo();
+        if (info == null) return false;
+        NetworkInfo.State network = info.getState();
+        return (network == NetworkInfo.State.CONNECTED);
     }
 }

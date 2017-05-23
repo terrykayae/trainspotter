@@ -38,7 +38,7 @@ public class TrainListPresenterImpl implements ITrainListPresenter.IPresenter {
     Scheduler observeScheduler;
     Scheduler subscribeScheduler;
     private List<TrainDetail> trainDetailList;
-    // Caching interactor, accesses Realm database instead of API
+    // Caching apiInteractor, accesses Realm database instead of API
     ITrainSpotterInteractor cachedInteractor;
 
     public TrainListPresenterImpl() {

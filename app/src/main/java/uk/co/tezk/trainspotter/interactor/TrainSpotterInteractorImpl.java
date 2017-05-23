@@ -12,6 +12,8 @@ import uk.co.tezk.trainspotter.model.TrainListItem;
 import uk.co.tezk.trainspotter.network.ITrainSpottingRetrofit;
 import uk.co.tezk.trainspotter.realm.ApiCache;
 
+import static uk.co.tezk.trainspotter.Utilitity.isNetworkAvailable;
+
 /**
  * Interactor to deal with the API - stores the Class list and any Train lists to the local Realm database
  * to allow caching
@@ -32,6 +34,8 @@ public class TrainSpotterInteractorImpl implements ITrainSpotterInteractor {
 
     @Override
     public Observable<ClassNumbers> getClassNumbers() {
+        if (!isNetworkAvailable())
+            return Observable.empty();
         // Fetch then cache the numbers
         Observable<ClassNumbers> classNumbers = retrofit.getClassNumbers();
         Log.i("TSII", "getClassNumbers, calling api");
@@ -43,6 +47,8 @@ public class TrainSpotterInteractorImpl implements ITrainSpotterInteractor {
 
     @Override
     public Observable<List<TrainListItem>> getTrains(String classNumber) {
+        if (!isNetworkAvailable())
+            return Observable.empty();
         Observable<List<TrainListItem>> trains = retrofit.getTrains(classNumber);
         ApiCache.getInstance().cacheTrainList(trains);
       //  ApiCache.getInstance().unsubscribe();
@@ -51,11 +57,15 @@ public class TrainSpotterInteractorImpl implements ITrainSpotterInteractor {
 
     @Override
     public Observable<TrainDetail> getTrainDetails(String classId, String trainId) {
+        if (!isNetworkAvailable())
+            return Observable.empty();
         return retrofit.getTrainDetails(classId, trainId);
     }
 
     @Override
     public void addTrainSighting(SightingDetails sightingDetails, String apiKey) {
+        if (!isNetworkAvailable())
+            return;
         retrofit.addTrainSighting(
                 sightingDetails.getTrainClass(),
                 sightingDetails.getTrainId(),
@@ -65,4 +75,5 @@ public class TrainSpotterInteractorImpl implements ITrainSpotterInteractor {
                 apiKey
         );
     }
+
 }

@@ -9,11 +9,11 @@
     tools:context="uk.co.tezk.trainspotter.MainActivity"
     tools:showIn="@layout/app_bar_main">
 
-    <ImageView
+ <!--   <ImageView
         android:id="@+id/ivMallard"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:src="@drawable/mallard"
         android:scaleType="centerCrop"/>
-
+-->
 </RelativeLayout>

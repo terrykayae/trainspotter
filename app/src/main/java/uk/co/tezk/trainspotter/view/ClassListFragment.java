@@ -1,6 +1,5 @@
 package uk.co.tezk.trainspotter.view;
 
-import android.app.Dialog;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -10,13 +9,12 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import uk.co.tezk.trainspotter.R;
 import uk.co.tezk.trainspotter.adapters.ClassListRecyclerViewAdapter;
+import uk.co.tezk.trainspotter.interfaces.TrainspotterDialogSupport;
 import uk.co.tezk.trainspotter.model.ClassDetails;
 import uk.co.tezk.trainspotter.presenter.ClassListPresenterImpl;
 import uk.co.tezk.trainspotter.presenter.IClassListPresenter;
@@ -31,7 +29,9 @@ public class ClassListFragment extends Fragment implements IClassListPresenter.I
     // Holder for the listener activity that we call
     private OnClassListFragmentInteractionListener mListener;
 
-    private Dialog progressDialog;
+    // Holder to access trainspotterDialog in MainActivity
+    private TrainspotterDialogSupport trainspotterDialog;
+
     private IClassListPresenter.IPresenter presenter;
 
     // Our list of classes for display
@@ -46,16 +46,24 @@ public class ClassListFragment extends Fragment implements IClassListPresenter.I
     }
 
     @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        Log.i("CLF","onAttach");
+        if (context instanceof OnClassListFragmentInteractionListener) {
+            mListener = (OnClassListFragmentInteractionListener) context;
+        } else {
+            throw new RuntimeException(context.toString()
+                    + " must implement OnClassListFragmentInteractionListener");
+        }
+        if (context instanceof TrainspotterDialogSupport)
+            trainspotterDialog = (TrainspotterDialogSupport)context;
+    }
+
+    @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         Log.i("CLF", "oncreate");
-
-        progressDialog = new Dialog(getActivity());
-        progressDialog.setTitle("Getting data, please wait");
-
-
-
     }
 
     @Override
@@ -76,18 +84,7 @@ public class ClassListFragment extends Fragment implements IClassListPresenter.I
     }
 
 
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        Log.i("CLF","onAttach");
-        if (context instanceof OnClassListFragmentInteractionListener) {
-            mListener = (OnClassListFragmentInteractionListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnClassListFragmentInteractionListener");
-        }
 
-    }
 
     @Override
     public void onDestroyView() {
@@ -108,32 +105,27 @@ public class ClassListFragment extends Fragment implements IClassListPresenter.I
     @Override
     public void onStartLoading() {
         Log.i("CLF","onStartLoading");
-        //progressDialog.show();
+        trainspotterDialog.startProgressDialog();
     }
 
     @Override
     public void onErrorLoading(String message) {
-      //  progressDialog.dismiss();
-        Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
+      //  trainspotterDialog.dismiss();
+        trainspotterDialog.showErrorMessage(message);
     }
 
     @Override
     public void onCompletedLoading() {
         Log.i("CLF", "onCompletedLoading");
-        progressDialog.dismiss();
+        trainspotterDialog.stopProgressDialog();
     }
 
     @Override
-    public void showClassList(List<String> classList) {
+    public void showClassList(List<ClassDetails> classList) {
         Log.i("CLF", "list contains " + classList.size());
         // TODO : Convert these to items?
-        classDetailsList = new ArrayList();
-        for (String each : classList) {
-            ClassDetails classDetails = new ClassDetails();
-            classDetails.setClassId(each);
-            classDetailsList.add(classDetails);
-        }
-        recyclerView.setAdapter(new ClassListRecyclerViewAdapter(classDetailsList, this, this.getContext()));
+
+        recyclerView.setAdapter(new ClassListRecyclerViewAdapter(classList, this, this.getContext()));
     }
 
     // To allow the ViewHolder in the RecyclerView adapter to send us click events

@@ -9,11 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import rx.Observable;
-import rx.schedulers.Schedulers;
 import uk.co.tezk.trainspotter.interactor.ITrainSpotterInteractor;
 import uk.co.tezk.trainspotter.model.ClassNumbers;
-import uk.co.tezk.trainspotter.presenter.ClassListPresenterImpl;
-import uk.co.tezk.trainspotter.presenter.IClassListPresenter;
+import uk.co.tezk.trainspotter.presenter.IClassListApiPresenter;
 
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -25,10 +23,10 @@ import static org.mockito.Mockito.when;
 
 public class ClassListPresenterTest {
     // The presenter under test
-    IClassListPresenter.IPresenter presenter;
+    IClassListApiPresenter.IPresenter presenter;
     // The mocked items
     @Mock
-    IClassListPresenter.IView view;
+    IClassListApiPresenter.IView view;
     @Mock
     ITrainSpotterInteractor interactor;
     @Mock
@@ -40,8 +38,8 @@ public class ClassListPresenterTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-
-        presenter = new ClassListPresenterImpl(interactor, Schedulers.immediate(), Schedulers.immediate(), cachedInteractor);
+//TODO : fix this
+       // presenter = new ClassListPresenterImpl(Schedulers.immediate(), Schedulers.immediate());
         classList = new ArrayList();
         classNumbers = new ClassNumbers();
         classList.add("1");
@@ -53,7 +51,6 @@ public class ClassListPresenterTest {
 
     @Test
     public void testBindingAndErrorPassingWorks() {
-        when(cachedInteractor.getClassNumbers()).thenReturn(Observable.<ClassNumbers>error(new Exception("No data returned from the server")));
         when(interactor.getClassNumbers()).thenReturn(Observable.<ClassNumbers>error(new Exception("No data returned from the server")));
         presenter.bind(view);
 
@@ -64,8 +61,7 @@ public class ClassListPresenterTest {
     }
     
     @Test
-    public void testBindingAndGetDataNoCacheWorks() {
-        when(cachedInteractor.getClassNumbers()).thenReturn(Observable.<ClassNumbers>empty());
+    public void testBindingAndGetDataCacheWorks() {
         when(interactor.getClassNumbers()).thenReturn(Observable.just(classNumbers));
         presenter.bind(view);
 
@@ -75,15 +71,4 @@ public class ClassListPresenterTest {
         verify(view, times(1)).onCompletedLoading();
     }
 
-    @Test
-    public void testBindingAndGetDataWithCacheWorks() {
-        when(cachedInteractor.getClassNumbers()).thenReturn(Observable.just(classNumbers));
-        when(interactor.getClassNumbers()).thenReturn(Observable.<ClassNumbers>empty());
-        presenter.bind(view);
-
-        presenter.retrieveData();
-
-        verify(view, times(1)).showClassList(classList);
-        verify(view, times(1)).onCompletedLoading();
-    }
 }

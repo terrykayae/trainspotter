@@ -13,7 +13,8 @@
     <GridLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-
+        android:layout_margin="4dp"
+        android:paddingLeft="4dp"
         >
 
         <TextView
@@ -22,6 +23,7 @@
             android:layout_height="wrap_content"
             android:layout_column="0"
             android:layout_row="0"
+            android:paddingTop="8dp"
             android:paddingBottom="8dp"
             android:layout_gravity="right"
             android:text="@string/number" />
@@ -32,7 +34,7 @@
             android:layout_height="wrap_content"
             android:layout_column="1"
             android:layout_row="0"
-            android:paddingRight="8dp"
+            android:ems="6"
             android:text="TextView" />
 
         <TextView
@@ -50,6 +52,7 @@
             android:layout_height="wrap_content"
             android:layout_column="3"
             android:layout_row="0"
+            android:ems="6"
             android:text="TextView" />
 
         <TextView
@@ -68,6 +71,11 @@
             android:layout_height="wrap_content"
             android:layout_column="1"
             android:layout_row="1"
+            android:ems="6"
+            android:layout_weight="1"
+            android:ellipsize="none"
+            android:maxLines="3"
+            android:scrollHorizontally="false"
             android:text="TextView" />
 
         <TextView
@@ -124,12 +132,12 @@
 
         <ImageView
             android:id="@+id/ivTrainSighting"
-            android:layout_width="46dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_column="4"
             android:layout_row="0"
             android:layout_rowSpan="3"
-            android:layout_gravity="center"
+            android:layout_gravity="right"
             app:srcCompat="@android:drawable/ic_menu_view" />
 
 

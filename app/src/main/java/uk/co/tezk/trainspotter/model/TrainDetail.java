@@ -3,6 +3,7 @@ package uk.co.tezk.trainspotter.model;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -42,5 +43,12 @@ public class TrainDetail {
 
     public void setImages(List<String> images) {
         this.images = images;
+    }
+
+    public void setImagesFromImageDetails(List<ImageDetails> images) {
+        this.images = new ArrayList();
+        for (ImageDetails each : images) {
+            this.images.add(each.getImageUrl());
+        }
     }
 }

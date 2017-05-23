@@ -58,6 +58,7 @@ public class Constant {
     public static final String SHOW_ENGINE = "2";
     public static final String CLASS_NUM_KEY = "classkey";
     public static final String TRAIN_NUM_KEY = "trainkey";
+    public static final String TRAIN_PARCEL_KEY = "ptrain";
 
     public static final String FRAG_TAG_DATE_PICKER = "Date picker";
 
@@ -65,7 +66,7 @@ public class Constant {
     public static final int REQUEST_IMAGE_CAPTURE_FROM_SPOT = 68;
     public static final int PICK_IMAGE_FROM_GALLERY = 67;
 
-    public static final String TAKE_PHOTO = "TAKE PHOTO";
+    public static final String TAKE_PHOTO = "TAKE_PHOTO";
 
     //keys for onInstanceSave of map
     public static final String MAP_VIEW_PARCELABLE_KEY = "MAP_PARCELABLE";

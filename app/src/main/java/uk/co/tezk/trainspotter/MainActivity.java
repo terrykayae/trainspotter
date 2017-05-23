@@ -1,6 +1,8 @@
 package uk.co.tezk.trainspotter;
 
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -17,6 +19,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.transition.Explode;
@@ -24,17 +27,20 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
 
 import io.realm.Realm;
+import uk.co.tezk.trainspotter.interfaces.TrainspotterDialogSupport;
 import uk.co.tezk.trainspotter.model.Camera;
 import uk.co.tezk.trainspotter.model.Constant;
 import uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION;
 import uk.co.tezk.trainspotter.model.TrainDetail;
-import uk.co.tezk.trainspotter.parcel.MapViewParcelable;
+import uk.co.tezk.trainspotter.parcel.TrainParcel;
 import uk.co.tezk.trainspotter.realm.ApiCache;
 import uk.co.tezk.trainspotter.view.ClassListFragment;
 import uk.co.tezk.trainspotter.view.LogSpotFragment;
@@ -43,6 +49,7 @@ import uk.co.tezk.trainspotter.view.TrainListFragment;
 
 import static android.R.drawable;
 import static uk.co.tezk.trainspotter.Utilitity.isLandscape;
+import static uk.co.tezk.trainspotter.model.Constant.CLASS_NUM_KEY;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.CLASS_LIST;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.INITIALISING;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.INVALID;
@@ -50,19 +57,23 @@ import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.LOG_SPOT;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.TRAIN_DETAIL;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.TRAIN_LIST;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION_KEY;
+import static uk.co.tezk.trainspotter.model.Constant.IMAGES_KEY;
 import static uk.co.tezk.trainspotter.model.Constant.MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_MAIN;
+import static uk.co.tezk.trainspotter.model.Constant.MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_SPOT;
 import static uk.co.tezk.trainspotter.model.Constant.MY_PERMISSIONS_REQUEST_LOCATION_FROM_DETAILS;
 import static uk.co.tezk.trainspotter.model.Constant.MY_PERMISSIONS_REQUEST_LOCATION_FROM_SPOT;
 import static uk.co.tezk.trainspotter.model.Constant.PICK_IMAGE_FROM_GALLERY;
 import static uk.co.tezk.trainspotter.model.Constant.REQUEST_IMAGE_CAPTURE_FROM_MAIN;
 import static uk.co.tezk.trainspotter.model.Constant.REQUEST_IMAGE_CAPTURE_FROM_SPOT;
-import static uk.co.tezk.trainspotter.model.Constant.SHOW_CLASS;
+import static uk.co.tezk.trainspotter.model.Constant.TAKE_PHOTO;
+import static uk.co.tezk.trainspotter.model.Constant.TRAIN_NUM_KEY;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
         ClassListFragment.OnClassListFragmentInteractionListener,
         TrainListFragment.OnTrainListFragmentInteractionListener,
-        TrainDetailFragment.OnTrainDetailFragmentInteractionListener
+        TrainDetailFragment.OnTrainDetailFragmentInteractionListener,
+        TrainspotterDialogSupport
 
 {
 
@@ -73,16 +84,23 @@ public class MainActivity extends AppCompatActivity
     // Store actions! If user pressed back, calling popBackStack() returns to previous fragment, but we don't know what activity that is
     // Store last activity here before updating
     private Stack<CURRENT_ACTION> actionStack = new Stack();
+    // Save a reference to the last parameters
+    private Map<String, String> lastParams;
     // Set when views are loaded to determine layout
     private boolean landscape;
     private boolean tablet;
 
-    private static Fragment fragment;
+    private boolean logFromImage = false;
+
+    private Fragment fragment;
     // If we're loading two fragments, this is what and where for the second
     Fragment secondFragment;
 
-    // Holder for the camera image filename
-    private String imageFilename;
+    // Holder for the camera which will hold the filename if we start Camera from the NavigationDrware
+    private Camera mCamera;
+
+    // If we're started from a notification, we received a Train parcel. Store that here to display at the right time
+    TrainParcel trainParcel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -118,23 +136,61 @@ public class MainActivity extends AppCompatActivity
                 }
             }
         }
-        MapViewParcelable mapSettings;
+        Bundle bundle = getIntent().getExtras();
+        if (getIntent().getParcelableExtra(Constant.TRAIN_PARCEL_KEY) != null) {
+            Log.i("MA", "Show train details from notification...");
+            // We're to show a train!
+            currentAction = TRAIN_DETAIL;
+            trainParcel = getIntent().getParcelableExtra(Constant.TRAIN_PARCEL_KEY);
+        } else {
+            if (bundle != null && bundle.get("class") != null) {
+                Log.i("MA", "rebuilding parcelable");
+                float lat = Float.parseFloat((String) bundle.get("lat"));
+                float lon = Float.parseFloat((String) bundle.get("lon"));
+                String classNum = (String) bundle.get("class");
+                String trainNum = (String) bundle.get("num");
+
+                trainParcel = new TrainParcel(lat, lon, classNum, trainNum);
+                currentAction = TRAIN_DETAIL;
+            }
+        }
+
+        if (bundle != null) {
+            for (String each : bundle.keySet()) {
+                Log.i("MA", each + " = " + bundle.get(each));
+            }
+        } else Log.i("MA", "No intent!");
+
 
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
+    protected void onStart() {
+        super.onStart();
+        Log.i("MA", "onStart");
         // Close any progress dialogues and fade the background
         doneInitialising();
         if (currentAction == INITIALISING)
             currentAction = CLASS_LIST;
 
+        // Load fragment, but don't add to the backstack - if we did on every onResume, we get a stack full!
         loadFragment(currentAction, false, null);
 
-        // Load fragment, but don't add to the backstack - if we did on every onResume, we get a stack full!
+        // if we started camera from navigation drawer, we can't load in the new fragment until we get here to
+        // Log the image!
+        if (logFromImage) {
+            Log.i("MA", "onCreate, logFromImage, camera = " + mCamera);
+            Map params = new HashMap();
+            params.put(IMAGES_KEY, mCamera.getFilename());
+            logFromImage = false;
+            loadFragment(LOG_SPOT, true, params);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
         Log.i("MA", "onResume");
-        // TODO : Store "null" in onRestoreInstance = will be details of second view in multipane layout
 
     }
 
@@ -168,7 +224,7 @@ public class MainActivity extends AppCompatActivity
                     }
                     currentAction = actionStack.peek();
                     fragment = getSupportFragmentManager().findFragmentByTag("MAIN_FRAGMENT");
-                    Log.i("MA", "Popped backstack = "+fragment);
+                    Log.i("MA", "Popped backstack = " + fragment);
                 }
             } else
                 finish();
@@ -195,6 +251,29 @@ public class MainActivity extends AppCompatActivity
             return true;
         }
 
+        // Show about dialog
+        if (id == R.id.action_about) {
+            new AlertDialog.Builder(this)
+                    .setTitle("TrainSpotter " + BuildConfig.VERSION_NAME)
+                    .setMessage("Images courtesy of www.freepik.com\nused under their \"free licence\"\n")
+                    .setNegativeButton("More details", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            Intent intent = new Intent(Intent.ACTION_VIEW);
+                            intent.setData(Uri.parse("http:\\www.freepik.com"));
+                            startActivity(intent);
+                        }
+                    })
+                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+                        }
+                    })
+                    .create()
+                    .show();
+        }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -205,10 +284,10 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.nav_camera) {
-            imageFilename = new Camera(this,
+            mCamera = new Camera(this,
                     Constant.REQUEST_IMAGE_CAPTURE_FROM_MAIN,
-                    Constant.MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_MAIN)
-                    .takePicture();
+                    Constant.MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_MAIN);
+            mCamera.takePicture();
         } else if (id == R.id.nav_gallery) {
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("image/*");
@@ -232,7 +311,8 @@ public class MainActivity extends AppCompatActivity
     private void doneInitialising() {
         //Called when we've completed the initialisation process - hide any progress dialogs, change the back
         //image to opaque
-        findViewById(R.id.ivMallard).setAlpha(0.3f);
+       // findViewById(R.id.ivMallard).setAlpha(0.3f);
+        ((RelativeLayout)findViewById(R.id.mainContainer)).setBackgroundColor(getResources().getColor(R.color.main_bg));
     }
 
 
@@ -251,9 +331,11 @@ public class MainActivity extends AppCompatActivity
         Log.i("MA", "fragment = " + fragment + ", currentAction = " + currentAction);
         secondFragment = null;
         int secondViewId = 0;
+        if (params != null)
+            lastParams = params;
         // Check for multi fragment layout
         landscape = isLandscape(this);
-        if (findViewById(R.id.classListLandscapeLayout) != null || findViewById(R.id.trainListLandscapeLayout) != null) {
+        if (findViewById(R.id.landscapeLayout)!=null) {
             // Landscape view found, load fragment
             tablet = true;
         }
@@ -271,8 +353,8 @@ public class MainActivity extends AppCompatActivity
                     secondViewId = R.id.trainListFragmentHolder;
                     TrainListFragment mTrainlistFragment = new TrainListFragment();
                     mTrainlistFragment.forcePortrait();
-                    String classToShow = (params == null ? "1" : params.get(Constant.SHOW_CLASS));
-                    Log.i("MA", "loadFragment, showing class " + classToShow);
+                    String classToShow = (params == null ? "1" : params.get(CLASS_NUM_KEY));
+                    Log.i("MA", "loadFragment, showing class in secondFragment " + classToShow);
                     mTrainlistFragment.setShowTrainsForClass(classToShow);
 
                     secondFragment = mTrainlistFragment;
@@ -285,53 +367,95 @@ public class MainActivity extends AppCompatActivity
                 if (fragment == null || !(fragment instanceof LogSpotFragment)) {
                     fragment = new LogSpotFragment();
                     if (params != null) {
-                        ((LogSpotFragment) fragment).setTrainClass(params.get(Constant.CLASS_NUM_KEY));
-                        ((LogSpotFragment) fragment).setTrainNum(params.get(Constant.TRAIN_NUM_KEY));
+                        if (params.get(IMAGES_KEY) != null) {
+                            Log.i("MA", "Setting logspot to show image : " + params.get(IMAGES_KEY));
+                            ((LogSpotFragment) fragment).setImage(params.get(IMAGES_KEY));
+                        } else {
+                            ((LogSpotFragment) fragment).setTrainClass(params.get(CLASS_NUM_KEY));
+                            ((LogSpotFragment) fragment).setTrainNum(params.get(TRAIN_NUM_KEY));
+                        }
                     }
                 } else return;
                 break;
             case TRAIN_LIST:
-                TrainListFragment mTrainListFragment = new TrainListFragment();
-                fragment = mTrainListFragment;
-                String classToShow = (params == null ? "1" : params.get(Constant.SHOW_CLASS));
-                Log.i("MA", "loadFragment, (port) showing class " + classToShow);
-                mTrainListFragment.setShowTrainsForClass(classToShow);
+                if (!(fragment instanceof TrainListFragment)) {
+                    TrainListFragment mTrainListFragment = new TrainListFragment();
+                    fragment = mTrainListFragment;
+                }
+                if (params != null) {
+                    String classToShow = params.get(CLASS_NUM_KEY);
+                    Log.i("MA", "loadFragment, (port) showing class " + classToShow);
+                    if (classToShow != null) {
+                        ((TrainListFragment) fragment).setShowTrainsForClass(classToShow);
+                    }
+                } else {
+                    Log.i("MA", "call to load trainList with null arguments, using " + lastParams);
+                    if (lastParams == null) {
+                        // Last resort = if we can't get details of class we were showing, show class list
+                        loadFragment(CLASS_LIST, true, null);
+                        return;
+                    }
+                    String classToShow = lastParams.get(CLASS_NUM_KEY);
+
+                    Log.i("MA", "loadFragment, (port) showing class " + classToShow);
+                    if (classToShow != null) {
+                        ((TrainListFragment) fragment).setShowTrainsForClass(classToShow);
+                    }
+                }
+
                 if (landscape) {
                     // If we're landscape, the train list goes on the right, class list on the left
                     TrainDetailFragment mTrainDetailFragment = new TrainDetailFragment();
-                    String trainToShow = (params == null ? "1" : params.get(Constant.SHOW_ENGINE));
-                    mTrainDetailFragment.setShowDetailsForTrain(classToShow, trainToShow);
-
+                    mTrainDetailFragment.forcePortrait(true);
+                    if (params != null) {
+                        String classToShow = params.get(CLASS_NUM_KEY);
+                        String trainToShow = params.get(TRAIN_NUM_KEY);
+                        mTrainDetailFragment.setShowDetailsForTrain(classToShow, trainToShow);
+                    }
                     secondFragment = mTrainDetailFragment;
-
                     secondViewId = R.id.trainDetailFragmentHolder;
                 }
                 break;
             case TRAIN_DETAIL:
-                // if landscape, train details on the right, train list on left
-                if (landscape) {
+                // if landscape, train details on the right, train list on left, unless showing notification
+                // Then fill the screen
+                if (landscape && trainParcel == null) {
                     if (!(fragment instanceof TrainListFragment)) {
                         TrainListFragment mTrainListFragmentForDetail = new TrainListFragment();
                         fragment = mTrainListFragmentForDetail;
-                        String classToShowForDetail = (params == null ? "1" : params.get(Constant.SHOW_CLASS));
+                        String classToShowForDetail = (params == null ? "1" : params.get(CLASS_NUM_KEY));
                         mTrainListFragmentForDetail.setShowTrainsForClass(classToShowForDetail);
+                        secondFragment = new TrainDetailFragment();
+                        ((TrainDetailFragment) secondFragment).forcePortrait(true);
+                        secondViewId = R.id.trainDetailFragmentHolder;
                         Log.i("MA", "loadFragment, (land, traininfo) showing class " + classToShowForDetail);
                     }
                 } else {
                     // is fragment current TrainDetailFragment? Might be if we've been paused. Only load new if not
                     if (!(fragment instanceof TrainDetailFragment)) {
                         fragment = new TrainDetailFragment();
-                        if (params != null) {
-                            String classNum = params.get(Constant.CLASS_NUM_KEY);
-                            String trainNum = params.get(Constant.TRAIN_NUM_KEY);
-                            ((TrainDetailFragment)fragment).setShowDetailsForTrain(classNum, trainNum);
-                        }
                     }
+                }
+                if (params != null) {
+                    String classNum = params.get(CLASS_NUM_KEY);
+                    String trainNum = params.get(TRAIN_NUM_KEY);
+                    TrainDetailFragment trainDetailFragment;
+                    if (fragment instanceof TrainDetailFragment)
+                        trainDetailFragment = (TrainDetailFragment) fragment;
+                    else
+                        trainDetailFragment = (TrainDetailFragment) secondFragment;
+                    trainDetailFragment.setShowDetailsForTrain(classNum, trainNum);
+                }
+                // Are we showinf a notification?
+                if (trainParcel != null) {
+                    ((TrainDetailFragment) fragment).setNotifyFor(trainParcel);
+                    trainParcel = null;
                 }
                 break;
             default:
                 throw new RuntimeException("Operation not supported");
         }
+
 
         Log.i("MA", "currentActivity = " + (currentAction == null ? "null" : currentAction));
         Log.i("MA", "fragment = " + (fragment == null ? "null" : fragment));
@@ -363,20 +487,14 @@ public class MainActivity extends AppCompatActivity
         landscape = false;
         // Now that the fragment has loaded, check for the presence of Landscape view holders which indicate we're
         // on a tablet
-        if (action == CLASS_LIST) {
-            if (findViewById(R.id.classListLandscapeLayout) != null) {
-                // Landscape class list! Load Train list fragment into holder
-                tablet = true;
-                landscape = true;
-            }
-        } else if (action == TRAIN_LIST) {
-            if (findViewById(R.id.trainListLandscapeLayout) != null) {
-                // Landscape train list! Load train details fragment into holder
-                tablet = true;
-                landscape = true;
-            }
+
+        if (findViewById(R.id.landscapeLayout) != null) {
+            // Landscape train list! Load train details fragment into holder
+            tablet = true;
+            landscape = true;
         }
 
+        Log.i("MA", "fragment loaded, tablet = " + tablet + ", landscape = " + landscape);
         currentAction = action;
     }
 
@@ -384,7 +502,7 @@ public class MainActivity extends AppCompatActivity
     public void onDisplayTrainsInClass(String classNum) {
         // Handler for click events from the class list
         Map args = new HashMap();
-        args.put(SHOW_CLASS, classNum);
+        args.put(CLASS_NUM_KEY, classNum);
         if (landscape) {
             // Current action doesn't change as we still show class list in landscape, tell second fragment to load new class
             ((TrainListFragment) secondFragment).setShowTrainsForClass(classNum);
@@ -397,6 +515,52 @@ public class MainActivity extends AppCompatActivity
         //View view = findViewById(R.id.trainListFragmentHolder);
     }
 
+
+    // Handler for interaction with TrainListFragment
+    @Override
+    public void onShowTrainDetails(String classNum, String trainNum) {
+        // TODO : depending on layout, if Tablet, left pane = train list, right = train details
+        // TODO : if phone, load in train details fragment
+        Log.i("MA", "onShowTrainDetails " + classNum + ", " + trainNum);
+        Map args = new HashMap();
+        args.put(CLASS_NUM_KEY, classNum);
+        args.put(TRAIN_NUM_KEY, trainNum);
+        if (landscape) {
+            if (secondFragment instanceof TrainDetailFragment) {
+                // Current action doesn't change as we still show class list in landscape, tell second fragment to load new class
+                ((TrainDetailFragment) secondFragment).setShowDetailsForTrain(classNum, trainNum);
+                //((TrainDetailFragment)secondFragment).reloadTrainList();
+            } else {
+                // need to load train list, add us to the right
+                loadFragment(TRAIN_LIST, true, args);
+                // Now display
+                if (secondFragment instanceof TrainDetailFragment) {
+                    ((TrainDetailFragment) secondFragment).setShowDetailsForTrain(classNum, trainNum);
+                } else {
+                    Log.i("MA", "onShowTrainDetails = Second fragment still not details?");
+                }
+            }
+        } else {
+            loadFragment(TRAIN_DETAIL, true, args);
+        }
+        Log.i("MA", "onShowTrainDetails display train " + classNum + ", " + trainNum
+
+
+        );
+    }
+
+    @Override
+    public void onAddSightingForTrain(String classNum, String trainNum) {
+        // Called if we click to add a sighting when we're displaying a trains details
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Shutdown realm
+        Realm.getDefaultInstance().close();
+        ApiCache.getInstance().unsubscribe();
+    }
     // Helper methods to alter the behaviour of the FAB
 
     private void setFabSpot() {
@@ -412,8 +576,8 @@ public class MainActivity extends AppCompatActivity
                     TrainDetail currentTrain = ((TrainDetailFragment) fragment).getCurrentTrain();
                     if (currentTrain != null && currentTrain.getTrain() != null) {
                         params = new HashMap();
-                        params.put(Constant.CLASS_NUM_KEY, currentTrain.getTrain().getClass_());
-                        params.put(Constant.TRAIN_NUM_KEY, currentTrain.getTrain().getNumber());
+                        params.put(CLASS_NUM_KEY, currentTrain.getTrain().getClass_());
+                        params.put(TRAIN_NUM_KEY, currentTrain.getTrain().getNumber());
                     }
                 }
                 loadFragment(CURRENT_ACTION.LOG_SPOT, true, params);
@@ -440,39 +604,6 @@ public class MainActivity extends AppCompatActivity
         });
     }
 
-    // Handler for interaction with TrainListFragment
-    @Override
-    public void onShowTrainDetails(String classNum, String trainNum) {
-        // TODO : depending on layout, if Tablet, left pane = train list, right = train details
-        // TODO : if phone, load in train details fragment
-        Log.i("MA", "onShowTrainDetails " + classNum + ", " + trainNum);
-        Map args = new HashMap();
-        args.put(Constant.CLASS_NUM_KEY, classNum);
-        args.put(Constant.TRAIN_NUM_KEY, trainNum);
-        if (landscape) {
-            // Current action doesn't change as we still show class list in landscape, tell second fragment to load new class
-            //    ((TrainListFragment)secondFragment).setShowTrainsForClass(classNum);
-            //    ((TrainListFragment)secondFragment).reloadTrainList();
-        } else {
-            currentAction = TRAIN_DETAIL;
-            loadFragment(currentAction, true, args);
-        }
-        Log.i("MA", "display trains in class " + classNum);
-    }
-
-    @Override
-    public void onAddSightingForTrain(String classNum, String trainNum) {
-        // Called if we click to add a sighting when we're displaying a trains details
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        // Shutdown realm
-        Realm.getDefaultInstance().close();
-        ApiCache.getInstance().unsubscribe();
-    }
-
     // Called when the permission dialog is closed
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
@@ -486,7 +617,7 @@ public class MainActivity extends AppCompatActivity
                     == PackageManager.PERMISSION_GRANTED) {
                 switch (requestCode) {
                     case MY_PERMISSIONS_REQUEST_LOCATION_FROM_SPOT: {
-                        Log.i("MA", "permission call back from logspot");
+                        Log.i("MA", "permission call back from logspot, fragment = " + fragment);
                         if (fragment instanceof LogSpotFragment) {
                             Log.i("MA", "setting location enabled on log spot to true");
                             ((LogSpotFragment) fragment).getmGoogleMap().setMyLocationEnabled(true);
@@ -500,10 +631,17 @@ public class MainActivity extends AppCompatActivity
                     }
                     break;
                     case MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_MAIN: {
-                        imageFilename = new Camera(this,
+                        mCamera = new Camera(this,
                                 Constant.REQUEST_IMAGE_CAPTURE_FROM_MAIN,
-                                Constant.MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_MAIN)
-                                .takePicture();
+                                Constant.MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_MAIN);
+                        mCamera.takePicture();
+                    }
+                    break;
+                    case MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_SPOT: {
+                        if (fragment instanceof LogSpotFragment) {
+                            // Tell LogSpot fragment to try taking another photo
+                            ((LogSpotFragment) fragment).onClick(TAKE_PHOTO);
+                        }
                     }
                     break;
                 }
@@ -515,15 +653,20 @@ public class MainActivity extends AppCompatActivity
     // Camera callback
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-
         if (requestCode == REQUEST_IMAGE_CAPTURE_FROM_SPOT && resultCode == RESULT_OK) {
+            Log.i("MA", "passing image to Log fragment : " + fragment);
             // Was image request sent from within LogSpot fragment? If so, pass on the message
             if (fragment instanceof LogSpotFragment) {
                 ((LogSpotFragment) fragment).onImageReady();
             }
         } else if (requestCode == REQUEST_IMAGE_CAPTURE_FROM_MAIN && resultCode == RESULT_OK) {
             // Was image request sent from MainActivity? Start LogSpot to save it!
-            Log.i("MA", "image "+imageFilename+" is ready for access!");
+            Log.i("MA", "image " + mCamera.getFilename() + " is ready for access! Starting LogSpot");
+            // Set a flag so when we get back to onResume, we can load in the new Fragment
+            logFromImage = true;
+            //  Map params = new HashMap();
+            //  params.put(IMAGES_KEY, mCamera.getFilename());
+            //    loadFragment(LOG_SPOT, true, params);
         } else if (requestCode == PICK_IMAGE_FROM_GALLERY && resultCode == RESULT_OK) {
             // Image picked!
             Uri selectedImage = data.getData();
@@ -536,5 +679,29 @@ public class MainActivity extends AppCompatActivity
             String picturePath = cursor.getString(columnIndex);
             cursor.close();
         }
+    }
+
+    // TrainspotterDialog implementation, allows fragments to show progress and errors without worrying about
+    // implementation details and so be consistent
+
+    private ProgressDialog progressDialog;
+
+    public void startProgressDialog() {
+        if (progressDialog == null) {
+            progressDialog = new ProgressDialog(this);
+            progressDialog.setIndeterminate(true);
+            progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+            progressDialog.setMessage(getString(R.string.loading_message));
+        }
+        progressDialog.show();
+    }
+
+    public void stopProgressDialog() {
+        if (progressDialog != null)
+            progressDialog.dismiss();
+    }
+
+    public void showErrorMessage(String message) {
+        Toast.makeText(this, "Encountered an error:\n" + message, Toast.LENGTH_LONG).show();
     }
 }
