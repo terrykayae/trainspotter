@@ -9,7 +9,6 @@
     <string name="navBarSub">tezksoftware\@tezk</string>
 
     <!-- My app strings, English -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="please_wait_whilst_initialising">Please wait whilst initialising</string>
     <string name="train_id">Train ID :</string>
     <string name="date">Date :</string>
@@ -23,7 +22,6 @@
     <string name="class_string">Class</string>
     <string name="no_sightings_logged">You have not logged any sightings for this class</string>
     <string name="sighting_count_message">You have logged sightings on %1$d out of %2$d trains</string>
-    <string name="title_activity_maps">Map</string>
     <string name="last_spotted">Last spotted :</string>
     <string name="where">Where :</string>
     <string name="last_seen">Seen :</string>
