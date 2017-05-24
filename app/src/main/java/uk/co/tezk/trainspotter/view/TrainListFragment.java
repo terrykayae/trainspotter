@@ -88,11 +88,11 @@ public class TrainListFragment extends Fragment implements
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // bug on later APIs
         super.onCreate(savedInstanceState);
         if (savedInstanceState!=null && savedInstanceState.getString(Constant.CLASS_NUM_KEY)!=null) {
             setShowTrainsForClass(savedInstanceState.getString(Constant.CLASS_NUM_KEY));
         }
-        setRetainInstance(true);
     }
 
     @Override
@@ -132,7 +132,8 @@ public class TrainListFragment extends Fragment implements
     public void onSaveInstanceState(Bundle outState) {
         // Save the current class we're viewing
         outState.putString(Constant.CLASS_NUM_KEY, showTrainsForClass);
-        super.onSaveInstanceState(outState);
+        // Bug in later APIs
+        //super.onSaveInstanceState(outState);
     }
 
     @Override
@@ -162,6 +163,10 @@ public class TrainListFragment extends Fragment implements
         if (mTrainList.size()==0) {
             if (showTrainsForClass==null || showTrainsForClass.equals("0")) {
                 return;
+            }
+            if (presenter == null) {
+                presenter = new TrainListPresenterImpl();
+                presenter.bind(this);
             }
             presenter.retrieveData(showTrainsForClass);
         }

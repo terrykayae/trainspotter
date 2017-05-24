@@ -10,10 +10,12 @@
         android:id="@+id/trainListRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
         android:layout_weight="1" />
 
     <FrameLayout
-        android:id="@+id/trainDetailFragmentHolder"
+        android:id="@+id/fragmentHolder"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_weight="1">

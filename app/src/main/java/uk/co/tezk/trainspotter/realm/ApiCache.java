@@ -47,7 +47,6 @@ public class ApiCache {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    Log.i("API", "wait loop ccl");
                 } while (realm != null);
             }
 
@@ -99,9 +98,7 @@ public class ApiCache {
 
     public void cacheTrainList(Observable<List<TrainListItem>> trainsObservable) {
         synchronized (this) {
-            Log.i("API", "CacheTrainList");
             if (realm != null) {
-                Log.i("API", "Realm = " + realm);
                 // Data is currently being persisted, wait. Very messy. TODO: implement better soution
                 do {
                     try {
@@ -110,13 +107,11 @@ public class ApiCache {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    Log.i("API", "wait loop ctl");
                 } while (realm != null);
             }
             realm = null;
             Observable<Integer> count = trainsObservable.count();
 
-            Log.i("API", "Carrying out save");
             final String[] classNum = new String[1] ;
             final int[] numTrains = new int[1];
             compositeSubscription.add(trainsObservable
@@ -133,7 +128,6 @@ public class ApiCache {
                     .subscribe(new Observer<TrainListItem>() {
                         @Override
                         public void onCompleted() {
-                            Log.i("API", "save trains complete");
                             // Update the class total
                             Realm.getDefaultInstance().executeTransaction(new Realm.Transaction() {
                                 @Override

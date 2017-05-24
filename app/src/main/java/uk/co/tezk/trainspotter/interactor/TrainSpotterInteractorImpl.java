@@ -1,7 +1,5 @@
 package uk.co.tezk.trainspotter.interactor;
 
-import android.util.Log;
-
 import java.util.List;
 
 import rx.Observable;
@@ -23,49 +21,54 @@ public class TrainSpotterInteractorImpl implements ITrainSpotterInteractor {
 
     ITrainSpottingRetrofit retrofit;
 
+    // for testing
+    boolean mockNetworkTest = false;
+
     // Default constructor
      private TrainSpotterInteractorImpl() {
         //TrainSpotterApplication.getApplication().getNetworkComponent().inject(this);
     }
 
-    public TrainSpotterInteractorImpl(ITrainSpottingRetrofit retrofit) {
+    public TrainSpotterInteractorImpl(ITrainSpottingRetrofit retrofit, boolean passNetworkTest) {
         this.retrofit = retrofit;
+        this.mockNetworkTest = passNetworkTest;
     }
 
     @Override
     public Observable<ClassNumbers> getClassNumbers() {
-        if (!isNetworkAvailable())
+        if (!mockNetworkTest && !isNetworkAvailable())
             return Observable.empty();
         // Fetch then cache the numbers
         Observable<ClassNumbers> classNumbers = retrofit.getClassNumbers();
-        Log.i("TSII", "getClassNumbers, calling api");
-        ApiCache.getInstance().cacheClassList(classNumbers);
+        if (!mockNetworkTest)
+            ApiCache.getInstance().cacheClassList(classNumbers);
        // ApiCache.getInstance().unsubscribe();
-        Log.i("TSII", "getClassNumbers, returning");
         return classNumbers;
     }
 
     @Override
     public Observable<List<TrainListItem>> getTrains(String classNumber) {
-        if (!isNetworkAvailable())
+        if (!mockNetworkTest && !isNetworkAvailable())
             return Observable.empty();
         Observable<List<TrainListItem>> trains = retrofit.getTrains(classNumber);
-        ApiCache.getInstance().cacheTrainList(trains);
+        if (!mockNetworkTest)
+            ApiCache.getInstance().cacheTrainList(trains);
       //  ApiCache.getInstance().unsubscribe();
         return trains;
     }
 
     @Override
     public Observable<TrainDetail> getTrainDetails(String classId, String trainId) {
-        if (!isNetworkAvailable())
+        if (!mockNetworkTest && !isNetworkAvailable())
             return Observable.empty();
         return retrofit.getTrainDetails(classId, trainId);
     }
 
     @Override
     public void addTrainSighting(SightingDetails sightingDetails, String apiKey) {
-        if (!isNetworkAvailable())
-            return;
+        if (!mockNetworkTest)
+            if (!isNetworkAvailable())
+                return;
         retrofit.addTrainSighting(
                 sightingDetails.getTrainClass(),
                 sightingDetails.getTrainId(),

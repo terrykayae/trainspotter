@@ -72,7 +72,7 @@ public class TrainDetailPresenterTest {
 
         presenter.retrieveData(CLASS_ID, ENGINE_ID);
 
-        verify(view, times(1)).showTrainDetails(trainDetail);
+        verify(view, times(2)).showTrainDetails(trainDetail);
         verify(view, times(1)).onCompletedLoading();
     }
 }

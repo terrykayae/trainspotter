@@ -76,13 +76,12 @@ public class TrainListPresenterImpl implements ITrainListPresenter.IPresenter {
 
     @Override
     public void retrieveData(String classNumber) {
-        //TODO :Not thread safe due to global list used
+        //TODO : Possibly not thread safe due to global list used
 
         view.onStartLoading();
         trainDetailList = new ArrayList<>();
         // Get list of trains (from API or Realm) then combine with our created and cached Realm data of train
         // Details
-        // TODO : Change the realm here to use a mockable object
         compositeSubscription.add(concat(cachedInteractor.getTrains(classNumber), interactor.getTrains(classNumber))
                 .first()
                 .observeOn(observeScheduler)
@@ -98,7 +97,8 @@ public class TrainListPresenterImpl implements ITrainListPresenter.IPresenter {
                     public TrainDetail call(TrainListItem trainListItem) {
                         TrainDetail newTrain = new TrainDetail();
                         newTrain.setTrain(trainListItem);
-                        RealmResults<SightingDetails> results = RealmHandler.getInstance().getSightings(trainListItem.getClass_(), trainListItem.getNumber());
+                        RealmResults<SightingDetails> results = RealmHandler.getInstance()
+                                .getSightings(trainListItem.getClass_(), trainListItem.getNumber());
                         newTrain.setSightings(new ArrayList());
                         newTrain.getSightings().addAll(results);
 

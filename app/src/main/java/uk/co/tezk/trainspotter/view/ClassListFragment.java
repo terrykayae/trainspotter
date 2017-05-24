@@ -63,8 +63,6 @@ public class ClassListFragment extends Fragment implements IClassListPresenter.I
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        setRetainInstance(true);
-
         Log.i("CLF", "oncreate");
     }
 

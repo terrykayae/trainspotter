@@ -100,9 +100,6 @@ public class RealmTrainSpotterInteractorImpl implements ITrainSpotterInteractor 
      //           .equalTo("classNum", classNumber)
                 .findAll());
 
-        Log.i("RTSII", "images saved = "+realm.where(ImageDetails.class).count());
-        Log.i("RTSII", "images saved = "+realm.where(ImageDetails.class).findAll());
-
         return Observable.just(trainDetail);
     }
 

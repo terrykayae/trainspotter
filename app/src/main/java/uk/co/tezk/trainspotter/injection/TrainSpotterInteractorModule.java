@@ -13,6 +13,6 @@ import uk.co.tezk.trainspotter.network.ITrainSpottingRetrofit;
 public class TrainSpotterInteractorModule {
     @Provides
     ITrainSpotterInteractor provideInteractor(ITrainSpottingRetrofit retrofit) {
-        return new TrainSpotterInteractorImpl(retrofit);
+        return new TrainSpotterInteractorImpl(retrofit, false);
     }
 }

@@ -28,6 +28,7 @@ public class TrainspotterFirebaseMessagingService extends FirebaseMessagingServi
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
+        // Called if we're active
         //super.onMessageReceived(remoteMessage);
         Log.i("firebaseMessaging", "message received");
         Log.i("TSFMS", "Recevied message from : "+remoteMessage.getFrom());
@@ -81,7 +82,7 @@ public class TrainspotterFirebaseMessagingService extends FirebaseMessagingServi
 
     @Override
     public void handleIntent(Intent intent) {
-
+        // Called if we're in the background...
         Log.i("TFMS", "handling intent : "+intent.getExtras());
         String body = intent.getExtras().getString("gcm.notification.body");
         Map <String, String> map = new HashMap();

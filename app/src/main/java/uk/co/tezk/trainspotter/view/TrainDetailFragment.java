@@ -105,7 +105,7 @@ public class TrainDetailFragment extends Fragment implements
     //Holders for settings that might be passed in that will be needed later
     MapViewParcelable mapSettings;
     // If we get sent a notification to display, store the item here and deal with in onDisplayDetails
-    private static TrainParcel trainParcel;
+    private TrainParcel trainParcel;
 
     // Adapter for the gallery of images
     GalleryRecyclerViewAdapter galleryRecyclerViewAdapter;
@@ -183,7 +183,6 @@ public class TrainDetailFragment extends Fragment implements
             images.add(imageFilename);
         galleryRecyclerViewAdapter = new GalleryRecyclerViewAdapter(images, getContext(), this, false);
         imageList = images;
-        setRetainInstance(true);
     }
 
     @Override
@@ -202,6 +201,9 @@ public class TrainDetailFragment extends Fragment implements
     public void resetData() {
         // Clear the images so we can reload
         imageList = new ArrayList<>();
+        //rvGallery.getAdapter().
+        galleryRecyclerViewAdapter = new GalleryRecyclerViewAdapter(imageList, getContext(), this, false);
+        rvGallery.setAdapter(galleryRecyclerViewAdapter);
     }
 
     public void fetchTrainData() {
@@ -215,13 +217,8 @@ public class TrainDetailFragment extends Fragment implements
         super.onViewCreated(view, savedInstanceState);
 
         fetchTrainData();
-        // Load the map
-        FragmentManager fragmentManager = ((MainActivity) context).getSupportFragmentManager();
-        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        // Initialse the the map
         mSupportMapFragment = SupportMapFragment.newInstance();
-        transaction.replace(R.id.mapHolder, mSupportMapFragment);
-        mSupportMapFragment.getMapAsync(this);
-        transaction.commit();
 
         //Initialise the gallery
         rvGallery.setAdapter(galleryRecyclerViewAdapter);
@@ -249,20 +246,43 @@ public class TrainDetailFragment extends Fragment implements
     }
 
     @Override
-    public void onSaveInstanceState(Bundle outState) {
+    public void onResume() {
+        super.onResume();
+        // Load the map
+        FragmentManager fragmentManager = ((MainActivity) context).getSupportFragmentManager();
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        transaction.add(R.id.mapHolder, mSupportMapFragment);
+        mSupportMapFragment.getMapAsync(this);
+        transaction.commit();
+    }
 
+    @Override
+    public void onPause() {
+        super.onPause();
+        // Store map settings
         // Save the map position
         CameraPosition cameraPosition = mGoogleMap.getCameraPosition();
-        MapViewParcelable mapSettings = new MapViewParcelable(
+        mapSettings = new MapViewParcelable(
                 cameraPosition.target.latitude,
                 cameraPosition.target.longitude,
                 cameraPosition.zoom,
                 cameraPosition.bearing,
                 cameraPosition.tilt
         );
-        outState.putParcelable(MAP_VIEW_PARCELABLE_KEY, mapSettings);
+        // Unload the map
+        FragmentManager fragmentManager = ((MainActivity) context).getSupportFragmentManager();
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        transaction.remove(mSupportMapFragment);
+        transaction.commit();
+    }
 
-        super.onSaveInstanceState(outState);
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+
+        // Save map settings into parcel
+        outState.putParcelable(MAP_VIEW_PARCELABLE_KEY, mapSettings);
+    // Bug on later APIs
+     //   super.onSaveInstanceState(outState);
         if (currentTrain != null) {
             outState.putString(Constant.CLASS_NUM_KEY, currentTrain.getTrain().getClass_());
             outState.putString(Constant.TRAIN_NUM_KEY, currentTrain.getTrain().getNumber());
@@ -272,6 +292,7 @@ public class TrainDetailFragment extends Fragment implements
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+
         presenter.unbind();
         presenter = null;
     }
@@ -369,14 +390,16 @@ public class TrainDetailFragment extends Fragment implements
 
                     LatLngBounds latLngBounds = new LatLngBounds(new LatLng(minLat, minLon), new LatLng(maxLat, maxLon));
                     CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(latLngBounds, 100); // 100 = padding
-                    mGoogleMap.animateCamera(cameraUpdate);
+                    if (mapReady)
+                        mGoogleMap.animateCamera(cameraUpdate);
                 } else {
                     // Just one sighting, zoom to average
                     CameraPosition cameraPosition = CameraPosition.builder()
                             .target(new LatLng(avgLat, avgLon))
                             .zoom(14f)
                             .build();
-                    mGoogleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+                    if (mapReady)
+                        mGoogleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
                 }
             }
         }
@@ -411,7 +434,6 @@ public class TrainDetailFragment extends Fragment implements
             } else {
                 imageList.addAll(trainDetail.getImages());
                 rvGallery.setVisibility(View.VISIBLE);
-
                 rvGallery.setAdapter(new GalleryRecyclerViewAdapter(imageList, context, this, false));
             }
 

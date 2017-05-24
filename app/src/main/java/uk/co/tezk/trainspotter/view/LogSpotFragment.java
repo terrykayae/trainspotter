@@ -259,7 +259,8 @@ public class LogSpotFragment extends Fragment implements
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
+        // Bug on later APIs
+        //super.onSaveInstanceState(outState);
 
         // Save the map position
         CameraPosition cameraPosition = mGoogleMap.getCameraPosition();

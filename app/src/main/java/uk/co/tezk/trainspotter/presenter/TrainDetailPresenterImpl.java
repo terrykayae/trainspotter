@@ -1,7 +1,5 @@
 package uk.co.tezk.trainspotter.presenter;
 
-import android.util.Log;
-
 import javax.inject.Inject;
 
 import rx.Observable;
@@ -50,6 +48,7 @@ public class TrainDetailPresenterImpl implements ITrainDetailPresenter.IPresente
 
     public TrainDetailPresenterImpl(ITrainSpotterInteractor apiInteractor, Scheduler observeScheduler, Scheduler subscribeScheduler) {
         this.apiInteractor = apiInteractor;
+        this.cachedInteractor = apiInteractor;
         this.observeScheduler = observeScheduler;
         this.subscribeScheduler = subscribeScheduler;
     }
@@ -64,7 +63,6 @@ public class TrainDetailPresenterImpl implements ITrainDetailPresenter.IPresente
         this.view = null;
         if (compositeSubscription!=null && compositeSubscription.hasSubscriptions())
             compositeSubscription.unsubscribe();
-        Log.i("TDPI", "unBind called");
     }
 
     @Override
@@ -73,9 +71,6 @@ public class TrainDetailPresenterImpl implements ITrainDetailPresenter.IPresente
         // Cannot merge data from Realm as it can't be altered outside of a transaction
         // plus I don't want any changes persisting!
         view.onStartLoading();
-        Log.i("TDPI", "compositeSubscription = "+compositeSubscription);
-        Log.i("TDPI", "compositeSubscription subscribed = "+compositeSubscription);
-
         Observable<TrainDetail> cachedTrainDetails = cachedInteractor.getTrainDetails(classNum, trainNum);
         Observable<TrainDetail> apiTrainDetails = apiInteractor.getTrainDetails(classNum, trainNum);
 
@@ -99,26 +94,5 @@ public class TrainDetailPresenterImpl implements ITrainDetailPresenter.IPresente
                         view.showTrainDetails(trainDetail);
                     }
                 }));
-        /*
-        compositeSubscription.add(apiInteractor.getTrainDetails(classNum, trainNum)
-                .observeOn(observeScheduler)
-                .subscribeOn(subscribeScheduler)
-                .subscribe(new Observer<TrainDetail>() {
-                    @Override
-                    public void onCompleted() {
-                        view.onCompletedLoading();
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        view.onErrorLoading(e==null?"Problem loading data":e.getMessage());
-                    }
-
-                    @Override
-                    public void onNext(TrainDetail trainDetail) {
-                        view.showTrainDetails(trainDetail);
-                    }
-                }));
-                */
     }
 }

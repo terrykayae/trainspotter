@@ -43,7 +43,7 @@ public class InteractorUnitTest {
     public void setUp() throws Exception {
         // Initialise our mocks
         MockitoAnnotations.initMocks(this);
-        interactor = new TrainSpotterInteractorImpl(retrofit);
+        interactor = new TrainSpotterInteractorImpl(retrofit, true);
         listOfClasses = new ClassNumbers();
         listOfClasses.setClassNumbers(new ArrayList<String>());
         listOfClasses.getClassNumbers().add("1");

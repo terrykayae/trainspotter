@@ -223,8 +223,9 @@ public class MainActivity extends AppCompatActivity
                         actionStack.push(CLASS_LIST);
                     }
                     currentAction = actionStack.peek();
-                    fragment = getSupportFragmentManager().findFragmentByTag("MAIN_FRAGMENT");
+                    //fragment = getSupportFragmentManager().findFragmentByTag("MAIN_FRAGMENT");
                     Log.i("MA", "Popped backstack = " + fragment);
+                    loadFragment(currentAction, false, lastParams);
                 }
             } else
                 finish();
@@ -346,7 +347,8 @@ public class MainActivity extends AppCompatActivity
     protected void onSaveInstanceState(Bundle outState) {
         // Save currentAction
         outState.putInt(CURRENT_ACTION_KEY, CURRENT_ACTION.toInteger(currentAction));
-        super.onSaveInstanceState(outState);
+        //bug on later APIs
+        //super.onSaveInstanceState(outState);
     }
 
 
@@ -385,7 +387,6 @@ public class MainActivity extends AppCompatActivity
                 fragment = new ClassListFragment();
                 if (landscape) {
                     // We're landscape so need to load train list as well
-                    secondViewId = R.id.trainListFragmentHolder;
                     TrainListFragment mTrainlistFragment = new TrainListFragment();
                     mTrainlistFragment.forcePortrait();
                     String classToShow = (params == null ? "1" : params.get(CLASS_NUM_KEY));
@@ -449,7 +450,6 @@ public class MainActivity extends AppCompatActivity
                         mTrainDetailFragment.setShowDetailsForTrain(classToShow, trainToShow);
                     }
                     secondFragment = mTrainDetailFragment;
-                    secondViewId = R.id.trainDetailFragmentHolder;
                 }
                 break;
             case TRAIN_DETAIL:
@@ -463,7 +463,6 @@ public class MainActivity extends AppCompatActivity
                         mTrainListFragmentForDetail.setShowTrainsForClass(classToShowForDetail);
                         secondFragment = new TrainDetailFragment();
                         ((TrainDetailFragment) secondFragment).forcePortrait(true);
-                        secondViewId = R.id.trainDetailFragmentHolder;
                         Log.i("MA", "loadFragment, (land, traininfo) showing class " + classToShowForDetail);
                     }
                 } else {
@@ -478,8 +477,12 @@ public class MainActivity extends AppCompatActivity
                     TrainDetailFragment trainDetailFragment;
                     if (fragment instanceof TrainDetailFragment)
                         trainDetailFragment = (TrainDetailFragment) fragment;
-                    else
-                        trainDetailFragment = (TrainDetailFragment) secondFragment;
+                    else {
+                        if (secondFragment instanceof TrainDetailFragment)
+                            trainDetailFragment = (TrainDetailFragment) secondFragment;
+                        else
+                            trainDetailFragment = new TrainDetailFragment();
+                    }
                     trainDetailFragment.setShowDetailsForTrain(classNum, trainNum);
                 }
                 // Are we showinf a notification?
@@ -507,10 +510,13 @@ public class MainActivity extends AppCompatActivity
         FragmentTransaction transaction = fragmentManager.beginTransaction();
 
         transaction.replace(R.id.mainContainer, fragment, "MAIN_FRAGMENT");
-        if (secondFragment != null) {
-            transaction.replace(secondViewId, secondFragment, "SECOND_FRAGMENT");
-        }
 
+        if (secondFragment != null) {
+            Fragment fragmentById = fragmentManager.findFragmentById(R.id.fragmentHolder);
+            if (fragmentById != null)
+                transaction.remove(fragmentById);
+            transaction.replace(R.id.fragmentHolder, secondFragment, "SECOND_FRAGMENT");
+        }
 
         if (addToBackStack) {
             transaction.addToBackStack(null);
@@ -567,6 +573,7 @@ public class MainActivity extends AppCompatActivity
         if (landscape) {
             if (secondFragment instanceof TrainDetailFragment) {
                 // Current action doesn't change as we still show class list in landscape, tell second fragment to load new class
+                Log.i("MA", "TDF - resetData");
                 ((TrainDetailFragment) secondFragment).resetData();
                 ((TrainDetailFragment) secondFragment).setShowDetailsForTrain(classNum, trainNum);
                 ((TrainDetailFragment) secondFragment).fetchTrainData();

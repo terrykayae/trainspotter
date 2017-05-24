@@ -31,18 +31,35 @@ public class ClassListPresenterImpl implements
 
     IClassListApiPresenter.IPresenter presenter;
 
+    private boolean skipRealm;
+
     public ClassListPresenterImpl() {
         observeScheduler = AndroidSchedulers.mainThread();
         subscribeScheduler = Schedulers.io();
     }
 
+    public ClassListPresenterImpl(Scheduler observeScheduler,
+                                  Scheduler subscribeScheduler,
+                                  IClassListApiPresenter.IPresenter presenter,
+                                  boolean skipRealm) {
+        this.observeScheduler = observeScheduler;
+        this.subscribeScheduler = subscribeScheduler;
+        this.presenter = presenter;
+        this.skipRealm = skipRealm;
+    }
+
     @Override
     public void retrieveData() {
         view.onStartLoading();
-        RealmResults<ClassDetails> results = RealmHandler.getInstance().getClassList().sort("classId");
-        if (results.size() == 0) {
+        RealmResults<ClassDetails> results = null;
+        if (!skipRealm) {
+             results = RealmHandler.getInstance().getClassList().sort("classId");
+        }
+        if (skipRealm || results.size() == 0) {
             // We need to get from the API and build the DB
-            presenter = new ClassListApiPresenterImpl();
+            if (presenter == null) {
+               presenter = new ClassListApiPresenterImpl();
+            }
             presenter.bind(this);
             presenter.retrieveData();
         } else {
@@ -69,11 +86,16 @@ public class ClassListPresenterImpl implements
     @Override
     public void showClassList(List<String> classList) {
         // Now we've got the class list (list of Strings) create the ClassDetails and pass those back
-        ApiCache apiCache = new ApiCache();
-        apiCache.bind(this);
+        ApiCache apiCache = null;
+        if (!skipRealm) {
+            apiCache = new ApiCache();
+            apiCache.bind(this);
+        }
         ClassNumbers classNumbers = new ClassNumbers();
         classNumbers.setClassNumbers(classList);
-        apiCache.cacheClassList(Observable.just(classNumbers));
+        if (!skipRealm) {
+            apiCache.cacheClassList(Observable.just(classNumbers));
+        }
         // Now inform the View we've got the initial list from the API
         List <ClassDetails> newClassList = new ArrayList();
         for (String each : classList) {
