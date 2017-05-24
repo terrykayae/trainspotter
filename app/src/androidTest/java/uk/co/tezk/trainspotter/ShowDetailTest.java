@@ -83,7 +83,6 @@ public class ShowDetailTest {
                                 0),
                         0),
                         isDisplayed()));
-        relativeLayout.check(matches(isDisplayed()));
 
     }
 
