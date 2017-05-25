@@ -1,9 +1,14 @@
 package uk.co.tezk.trainspotter.adapters;
 
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
+import android.support.v4.content.FileProvider;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -11,6 +16,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -86,7 +92,17 @@ public class GalleryRecyclerViewAdapter extends RecyclerView.Adapter<GalleryRecy
             public void onClick(View v) {
                 if (imageClickListener!=null)
                     imageClickListener.onClick(holder.url);
-
+                Intent intent = new Intent();
+                intent.setAction(android.content.Intent.ACTION_VIEW);
+                Uri uriForFile = FileProvider.getUriForFile(context, "uk.co.tezk.trainspotter", new File(holder.url));
+                Log.i("GRVA", "uriForImageFile = "+uriForFile);
+                intent.setDataAndType(uriForFile, "image/png");
+                List<ResolveInfo> resInfoList = context.getPackageManager().queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+                for (ResolveInfo resolveInfo : resInfoList) {
+                    String packageName = resolveInfo.activityInfo.packageName;
+                    context.grantUriPermission(packageName, uriForFile, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                }
+                context.startActivity(intent);
             }
         });
     }
@@ -162,5 +178,6 @@ public class GalleryRecyclerViewAdapter extends RecyclerView.Adapter<GalleryRecy
     // In order to pass on click messages, out holder fragment must implement this
     public interface OnImageClickListener {
         void onClick(String imageUrl) ;
+
     }
 }

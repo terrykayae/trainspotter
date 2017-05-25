@@ -34,7 +34,8 @@ public class RealmHandler {
     // Save sightings
     public SightingDetails persistSightingDetails(final SightingDetails sightingDetails) {
         // If we don't know train class, try and find, or set to 0
-        if (sightingDetails.getTrainClass() == null) {
+        if (sightingDetails.getTrainClass() == null || sightingDetails.getTrainClass().length() == 0 ||
+                "0".equals(sightingDetails.getTrainClass())) {
             Log.i("RH", "sightingdetails.trainclass == null");
             RealmResults<TrainListItem> results = Realm.getDefaultInstance()
                     .where(TrainListItem.class)
@@ -73,10 +74,11 @@ public class RealmHandler {
                         .equalTo("classId", sightingDetails.getTrainClass())
                         .findFirst());
 
-                realm.where(ClassDetails.class)
-                        .equalTo("classId", ""+sightingDetails.getTrainClass())
-                        .findFirst()
-                        .setSightingsRecorded((int) trainsInClassSpotted);
+                ClassDetails classId = realm.where(ClassDetails.class)
+                        .equalTo("classId", "" + sightingDetails.getTrainClass())
+                        .findFirst();
+                if (classId!=null)
+                        classId.setSightingsRecorded((int) trainsInClassSpotted);
 
                 SightingDetails toRealm = realm.copyToRealm(sightingDetails);
             }
@@ -95,6 +97,7 @@ public class RealmHandler {
     }
 
     public void persistImageDetails(final List<String> imageFilenames, final SightingDetails sightingDetails) {
+        Log.i("REALM","saveImage = "+imageFilenames.size());
         if (imageFilenames != null && imageFilenames.size() > 0) {
             final Realm instance = Realm.getDefaultInstance();
             instance.executeTransaction(new Realm.Transaction() {

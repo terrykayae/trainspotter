@@ -426,6 +426,7 @@ public class TrainDetailFragment extends Fragment implements
             trainDetail.setSightings(newSightings);
         } else {
             //We don't want to show images for notifications, so only add here
+            Log.i("MA","Train images ======= "+trainDetail.getImages());
             if (trainDetail.getImages() == null || trainDetail.getImages().size() == 0) {
                 // No images in this train - if the train list is empty, hide the gallery
                 if (imageList.size() == 0) {

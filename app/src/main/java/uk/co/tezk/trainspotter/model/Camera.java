@@ -36,6 +36,9 @@ public class Camera {
 
     public String getFilename() { return imageFilename; }
 
+    public void setFilename(String imageFilename)
+    { this.imageFilename = imageFilename; }
+
     public String takePicture() {
         imageFilename = null;
         // Check we can write externally, if so send request to take a picture

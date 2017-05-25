@@ -14,13 +14,14 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import uk.co.tezk.trainspotter.MainActivity;
 import uk.co.tezk.trainspotter.R;
 import uk.co.tezk.trainspotter.model.SightingDetails;
 import uk.co.tezk.trainspotter.model.TrainDetail;
 import uk.co.tezk.trainspotter.model.TrainListItem;
 
 /**
- * Created by tezk on 15/05/17.
+ * Recyclerview Adapter to show the list of trains
  */
 
 public class TrainListRecyclerViewAdapter extends RecyclerView.Adapter <TrainListRecyclerViewAdapter.TrainViewHolder> {
@@ -114,6 +115,7 @@ public class TrainListRecyclerViewAdapter extends RecyclerView.Adapter <TrainLis
             @Override
             public void onClick(View v) {
                 Toast.makeText(context, "Adding log", Toast.LENGTH_SHORT).show();
+                ((MainActivity)context).onAddSightingForTrain(trainListItem.getClass_(), trainListItem.getNumber());
             }
         });
     }

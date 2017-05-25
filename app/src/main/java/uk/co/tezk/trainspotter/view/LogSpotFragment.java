@@ -334,6 +334,8 @@ public class LogSpotFragment extends Fragment implements
         // Create and store object
         SightingDetails sightingDetails = new SightingDetails();
         sightingDetails.setTrainId(etTrainId.getText().toString());
+        // TODO : // FIXME
+        sightingDetails.setTrainClass(trainClass==null?"0":trainClass);
         sightingDetails.setLocationName(etLocation.getText().toString());
         //sightingDetails.setTrainClass();
         sightingDetails.setDate(tvDate.getText().toString());
@@ -394,7 +396,7 @@ public class LogSpotFragment extends Fragment implements
         adapter.notifyDataSetChanged();
         // Save the filename to our list
         rvGallery.setVisibility(View.VISIBLE);
-
+        imageList.add(imageFilename);
     }
 
     // If we're going to be showing an image
@@ -408,5 +410,10 @@ public class LogSpotFragment extends Fragment implements
         etLocation.setText(details);
 
 
+    }
+
+    public void clear() {
+        trainClass = "";
+        trainNum = "";
     }
 }
