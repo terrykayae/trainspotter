@@ -69,7 +69,10 @@ public class GeocodePresenterImpl implements IGeocodePresenter.IPresenter {
                     public void onNext(Geocoder geocoder) {
                         List<Result> results = geocoder.getResults();
                         if (results!=null && results.size()>0) {
-                            view.updateLocation(results.get(0).getComponents().getCity());
+                            String location = results.get(0).getComponents().getSuburb();
+                            if (location == null || location.length()==0)
+                                location = results.get(0).getComponents().getCity();
+                            view.updateLocation(location);
                         }
                     }
                 });

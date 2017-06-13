@@ -37,4 +37,6 @@
     <string name="loading">Loading</string>
     <string name="about">About</string>
     <string name="location">Location :</string>
+    <string name="log_spot_title">Log your sighting</string>
+    <string name="search_for_train">Search for a train</string>
 </resources>

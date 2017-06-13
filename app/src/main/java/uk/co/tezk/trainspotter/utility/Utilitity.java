@@ -1,4 +1,4 @@
-package uk.co.tezk.trainspotter;
+package uk.co.tezk.trainspotter.utility;
 
 import android.app.Activity;
 import android.content.Context;
@@ -6,7 +6,6 @@ import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.Build;
 import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
@@ -18,12 +17,13 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import uk.co.tezk.trainspotter.MainActivity;
+import uk.co.tezk.trainspotter.TrainSpotterApplication;
 import uk.co.tezk.trainspotter.model.Constant;
 
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
-import static uk.co.tezk.trainspotter.TrainSpotterApplication.getApplication;
 
 /**
  * Utility helper classes
@@ -44,7 +44,7 @@ public class Utilitity {
         if (ActivityCompat.checkSelfPermission(context, ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(context, ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // We haven't got permission to access FINE_LOCATION, do we need to provide an explanation?
-            if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) && ((MainActivity) context).shouldShowRequestPermissionRationale(ACCESS_FINE_LOCATION)) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale((Activity)context, ACCESS_FINE_LOCATION)) {
                 // Show a dialog to explain why we need permission
                 new AlertDialog.Builder(context)
                         .setTitle("Location Permission Needed")
@@ -75,7 +75,7 @@ public class Utilitity {
     public static boolean checkStoragePermissions(final Context context, final int permissionCallbackCode) {
         if (ActivityCompat.checkSelfPermission(context, WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             // We haven't got permission to access FINE_LOCATION, do we need to provide an explanation?
-            if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) && ((MainActivity) context).shouldShowRequestPermissionRationale(WRITE_EXTERNAL_STORAGE)) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale((Activity) context, WRITE_EXTERNAL_STORAGE)) {
                 // Show a dialog to explain why we need permission
                 new AlertDialog.Builder(context)
                         .setTitle("External write permission")

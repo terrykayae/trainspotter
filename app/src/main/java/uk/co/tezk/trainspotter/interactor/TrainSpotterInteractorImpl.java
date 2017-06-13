@@ -10,7 +10,7 @@ import uk.co.tezk.trainspotter.model.TrainListItem;
 import uk.co.tezk.trainspotter.network.ITrainSpottingRetrofit;
 import uk.co.tezk.trainspotter.realm.ApiCache;
 
-import static uk.co.tezk.trainspotter.Utilitity.isNetworkAvailable;
+import static uk.co.tezk.trainspotter.utility.Utilitity.isNetworkAvailable;
 
 /**
  * Interactor to deal with the API - stores the Class list and any Train lists to the local Realm database

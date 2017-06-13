@@ -1,13 +1,13 @@
 package uk.co.tezk.trainspotter;
 
 import android.app.ProgressDialog;
+import android.app.SearchManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
@@ -17,56 +17,52 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GravityCompat;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
-import android.transition.Explode;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.RelativeLayout;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Stack;
+import java.util.concurrent.TimeUnit;
 
 import io.realm.Realm;
+import rx.Observer;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.subjects.PublishSubject;
 import uk.co.tezk.trainspotter.interfaces.TrainspotterDialogSupport;
 import uk.co.tezk.trainspotter.model.Camera;
 import uk.co.tezk.trainspotter.model.Constant;
 import uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION;
 import uk.co.tezk.trainspotter.model.TrainDetail;
 import uk.co.tezk.trainspotter.model.TrainspotterSharedPreferences;
-import uk.co.tezk.trainspotter.parcel.TrainParcel;
+import uk.co.tezk.trainspotter.model.parcel.TrainParcel;
 import uk.co.tezk.trainspotter.realm.ApiCache;
 import uk.co.tezk.trainspotter.view.ClassListFragment;
-import uk.co.tezk.trainspotter.view.LogSpotFragment;
 import uk.co.tezk.trainspotter.view.TrainDetailFragment;
 import uk.co.tezk.trainspotter.view.TrainListFragment;
 
 import static android.R.drawable;
-import static uk.co.tezk.trainspotter.Utilitity.isLandscape;
 import static uk.co.tezk.trainspotter.model.Constant.CLASS_NUM_KEY;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.CLASS_LIST;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.INITIALISING;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.INVALID;
-import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.LOG_SPOT;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.TRAIN_DETAIL;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION.TRAIN_LIST;
 import static uk.co.tezk.trainspotter.model.Constant.CURRENT_ACTION_KEY;
-import static uk.co.tezk.trainspotter.model.Constant.IMAGES_KEY;
 import static uk.co.tezk.trainspotter.model.Constant.MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_MAIN;
-import static uk.co.tezk.trainspotter.model.Constant.MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_SPOT;
 import static uk.co.tezk.trainspotter.model.Constant.MY_PERMISSIONS_REQUEST_LOCATION_FROM_DETAILS;
-import static uk.co.tezk.trainspotter.model.Constant.MY_PERMISSIONS_REQUEST_LOCATION_FROM_SPOT;
 import static uk.co.tezk.trainspotter.model.Constant.PICK_IMAGE_FROM_GALLERY;
 import static uk.co.tezk.trainspotter.model.Constant.REQUEST_IMAGE_CAPTURE_FROM_MAIN;
-import static uk.co.tezk.trainspotter.model.Constant.REQUEST_IMAGE_CAPTURE_FROM_SPOT;
-import static uk.co.tezk.trainspotter.model.Constant.TAKE_PHOTO;
 import static uk.co.tezk.trainspotter.model.Constant.TRAIN_NUM_KEY;
 
 public class MainActivity extends AppCompatActivity
@@ -77,25 +73,16 @@ public class MainActivity extends AppCompatActivity
         TrainspotterDialogSupport
 
 {
-
-    FloatingActionButton fab;
     CURRENT_ACTION currentAction;
 
     private Context context;
-    // Store actions! If user pressed back, calling popBackStack() returns to previous fragment, but we don't know what activity that is
-    // Store last activity here before updating
-    private Stack<CURRENT_ACTION> actionStack = new Stack();
-    // Save a reference to the last parameters
-    private Map<String, String> lastParams;
     // Set when views are loaded to determine layout
     private boolean landscape;
     private boolean tablet;
 
-    private boolean logFromImage = false;
-
     private Fragment fragment;
     // If we're loading two fragments, this is what and where for the second
-    Fragment secondFragment;
+    private Fragment secondFragment;
 
     // Holder for the camera which will hold the filename if we start Camera from the NavigationDrware
     private Camera mCamera;
@@ -103,20 +90,22 @@ public class MainActivity extends AppCompatActivity
     // If we're started from a notification, we received a Train parcel. Store that here to display at the right time
     TrainParcel trainParcel;
 
+    // Holders for current train and class
+    private String currentTrain;
+    private String currentClass;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         currentAction = INITIALISING;
         context = this;
-        // Initalise the action stack - we don't push the current state from onResume, so need first element to be CLASS_LIST
-        if (actionStack.size() == 0)
-            actionStack.push(CLASS_LIST);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        fab = (FloatingActionButton) findViewById(R.id.fab);
+
         setFabSpot();
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -136,6 +125,29 @@ public class MainActivity extends AppCompatActivity
                     currentAction = INITIALISING;
                 }
             }
+            Map params = new HashMap();
+            if (currentTrain != null) {
+                params.put(Constant.CLASS_NUM_KEY, currentClass);
+                params.put(Constant.TRAIN_NUM_KEY, currentTrain);
+            } else {
+                if (savedInstanceState.getString(CLASS_NUM_KEY) != null) {
+                    currentClass = savedInstanceState.getString(CLASS_NUM_KEY);
+                    params.put(Constant.CLASS_NUM_KEY, currentClass);
+                }
+                if (savedInstanceState.getString(TRAIN_NUM_KEY) != null) {
+                    currentTrain = savedInstanceState.getString(TRAIN_NUM_KEY);
+                    params.put(Constant.TRAIN_NUM_KEY, currentTrain);
+                }
+
+
+            }
+            loadFragment(currentAction, false, params);
+        } else {
+            Log.i("MA", "savedInstanceState was null");
+            Log.i("MA", "onCreate, resetting class list");
+            if (fragment == null)
+                loadFragment(CLASS_LIST, false, null);
+
         }
         Bundle bundle = getIntent().getExtras();
         if (getIntent().getParcelableExtra(Constant.TRAIN_PARCEL_KEY) != null) {
@@ -161,28 +173,25 @@ public class MainActivity extends AppCompatActivity
                 Log.i("MA", each + " = " + bundle.get(each));
             }
         } else Log.i("MA", "No intent!");
+
+        Log.i("MA", "onCreate, fragmentBackstack = " + getSupportFragmentManager().getBackStackEntryCount());
     }
 
     @Override
     protected void onStart() {
         super.onStart();
+
         Log.i("MA", "onStart");
         // Close any progress dialogues and fade the background
         doneInitialising();
         if (currentAction == INITIALISING)
             currentAction = CLASS_LIST;
 
-        // if we started camera from navigation drawer, we can't load in the new fragment until we get here to
-        // Log the image!
-        if (logFromImage) {
-            Log.i("MA", "onStart, logFromImage, camera = " + mCamera+", "+mCamera.getFilename());
-            Map params = new HashMap();
-            params.put(IMAGES_KEY, mCamera.getFilename());
-            logFromImage = false;
-            loadFragment(LOG_SPOT, true, params);
-        } else {
-            // Load fragment, but don't add to the backstack - if we did on every onResume, we get a stack full!
-            loadFragment(currentAction, false, null);
+        // Load fragment, but don't add to the backstack - if we did on every onResume, we get a stack full!
+        Map params = new HashMap();
+        if (trainParcel != null) {
+            params.put(Constant.CLASS_NUM_KEY, trainParcel.getTrainClass());
+            params.put(Constant.TRAIN_NUM_KEY, trainParcel.getTrainNum());
         }
     }
 
@@ -206,35 +215,80 @@ public class MainActivity extends AppCompatActivity
             drawer.closeDrawer(GravityCompat.START);
         } else {
             // Navigation drawer is closed, move back one fragment, quit if the stack is empty
-            //  if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
-            //      getSupportFragmentManager().popBackStack();
-          if (actionStack.size() > 0) {
-                // Should never be 0 if we're popping - if last action was Spot, change the FAB button back
-                Log.i("MA", "pressed back = " + actionStack.peek());
-                if (actionStack.pop() == LOG_SPOT) {
-                    setFabSpot();
-                }
-                if (actionStack.size() == 0) {
-                    Log.e("MA", "actionStack was empty");
-                    finish();
-                    return;
-                    // actionStack.push(CLASS_LIST);
-                }
-                currentAction = actionStack.peek();
-                //fragment = getSupportFragmentManager().findFragmentByTag("MAIN_FRAGMENT");
-                Log.i("MA", "Popped backstack = " + fragment);
-                loadFragment(currentAction, false, lastParams);
-                //  }
+            if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+                getSupportFragmentManager().popBackStack();
             } else
                 finish();
-            //super.onBackPressed();
         }
     }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
+
+        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        //SearchView searchView = (SearchView) menu.findItem(R.id.app_bar_search).getActionView();
+        SearchView searchView = (SearchView) MenuItemCompat.getActionView(menu.findItem(R.id.app_bar_search));
+        // Assumes current activity is the searchable activity
+        if (searchView != null) {
+            searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+            searchView.setIconifiedByDefault(false); // Do not iconify the widget; expand it by default
+            searchView.setSearchableInfo(searchManager.
+                    getSearchableInfo(getComponentName()));
+            searchView.setSubmitButtonEnabled(true);
+
+            final PublishSubject<String> subject = PublishSubject.create();
+
+
+            searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String query) {
+                    return false;
+                }
+
+                @Override
+                public boolean onQueryTextChange(String newText) {
+                    Log.i("MA", "onQueryTextChanged = " + newText);
+                    subject.onNext(newText.toString());
+
+                    return true;
+                }
+            });
+            subject.debounce(600, TimeUnit.MILLISECONDS)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new Observer<String>() {
+                        @Override
+                        public void onCompleted() {
+                            Log.i("MA", "SearchHandler = onComplete?");
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+                            Log.i("MA", "SearchHandler = error? " + e.getMessage());
+                            e.printStackTrace();
+                        }
+
+                        @Override
+                        public void onNext(String s) {
+                            if (s == null || s.length() == 0) {
+                                if (currentAction == TRAIN_LIST) {
+                                    TrainListFragment trainListFragment = (TrainListFragment) fragment;
+                                    trainListFragment.searchFor("");
+                                }
+                                return;
+                            }
+                            if (currentAction != TRAIN_LIST)
+                                loadFragment(TRAIN_LIST, true, null);
+                            Log.i("MA", "Search for " + s);
+                            TrainListFragment trainListFragment = (TrainListFragment) fragment;
+                            trainListFragment.searchFor(s);
+                        }
+                    });
+        } else {
+            Log.i("MA", "SearchView was null");
+        }
         return true;
     }
 
@@ -246,18 +300,10 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.action_camera) {
-            if (currentAction == LOG_SPOT) {
-                Camera camera = new Camera(this,
-                        Constant.REQUEST_IMAGE_CAPTURE_FROM_SPOT,
-                        Constant.MY_PERMISSIONS_REQUEST_LOCATION_FROM_SPOT);
-                ((LogSpotFragment) fragment).setCamera(camera);
-                camera.takePicture();
-            } else {
-                mCamera = new Camera(this,
-                        Constant.REQUEST_IMAGE_CAPTURE_FROM_MAIN,
-                        Constant.MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_MAIN);
-                mCamera.takePicture();
-            }
+            mCamera = new Camera(this,
+                    Constant.REQUEST_IMAGE_CAPTURE_FROM_MAIN,
+                    Constant.MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_MAIN);
+            mCamera.takePicture();
 
             return true;
         }
@@ -301,25 +347,16 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.nav_camera) {
-            if (currentAction == LOG_SPOT) {
-                Camera camera = new Camera(this,
-                        Constant.REQUEST_IMAGE_CAPTURE_FROM_SPOT,
-                        Constant.MY_PERMISSIONS_REQUEST_LOCATION_FROM_SPOT);
-                ((LogSpotFragment) fragment).setCamera(camera);
-                camera.takePicture();
-            } else {
-                mCamera = new Camera(this,
-                        Constant.REQUEST_IMAGE_CAPTURE_FROM_MAIN,
-                        Constant.MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_MAIN);
-                mCamera.takePicture();
-            }
+            mCamera = new Camera(this,
+                    Constant.REQUEST_IMAGE_CAPTURE_FROM_MAIN,
+                    Constant.MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_MAIN);
+            mCamera.takePicture();
         } else if (id == R.id.nav_gallery) {
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("image/*");
             startActivityForResult(intent, PICK_IMAGE_FROM_GALLERY);
         } else if (id == R.id.nav_favourites) {
             // Todo : Show list of favourites
-
 
         } else if (id == R.id.nav_share) {
 
@@ -335,9 +372,7 @@ public class MainActivity extends AppCompatActivity
 
     private void doneInitialising() {
         //Called when we've completed the initialisation process - hide any progress dialogs, change the back
-        //image to opaque
-        // findViewById(R.id.ivMallard).setAlpha(0.3f);
-        ((RelativeLayout) findViewById(R.id.mainContainer)).setBackgroundColor(getResources().getColor(R.color.main_bg));
+        ((LinearLayout) findViewById(R.id.parentContainer)).setBackgroundColor(getResources().getColor(R.color.main_bg));
     }
 
 
@@ -345,22 +380,20 @@ public class MainActivity extends AppCompatActivity
     protected void onSaveInstanceState(Bundle outState) {
         // Save currentAction
         outState.putInt(CURRENT_ACTION_KEY, CURRENT_ACTION.toInteger(currentAction));
-        //bug on later APIs
-        //super.onSaveInstanceState(outState);
+        // Save details of most recent train / class
+        outState.putString(CLASS_NUM_KEY, currentClass);
+        outState.putString(TRAIN_NUM_KEY, currentTrain);
+
+        Log.i("MA", "onSaveInstanceState, fragmentBackstack = " + getSupportFragmentManager().getBackStackEntryCount());
+
     }
 
-
     private void loadFragment(CURRENT_ACTION action, boolean addToBackStack, Map<String, String> params) {
-        //Reset the fragment holder
-        //fragment = null;
         Log.i("MA", "Loading fragment " + action + " with addToBackStack " + addToBackStack);
         Log.i("MA", "fragment = " + fragment + ", currentAction = " + currentAction);
 
-        secondFragment = null;
-        int secondViewId = 0;
-        //if (params != null)
-        //    lastParams = params;
-        // Check for multi fragment layout
+        //secondFragment = null;
+
         if (params == null) {
             params = new HashMap<>();
             if (TrainspotterSharedPreferences.getClassNumber() != null)
@@ -368,54 +401,50 @@ public class MainActivity extends AppCompatActivity
             if (TrainspotterSharedPreferences.getTrainNumber() != null)
                 params.put(TRAIN_NUM_KEY, TrainspotterSharedPreferences.getTrainNumber());
         }
-        landscape = isLandscape(this);
+
+        currentClass = params.get(Constant.CLASS_NUM_KEY);
+        currentTrain = params.get(Constant.TRAIN_NUM_KEY);
+
         if (findViewById(R.id.landscapeLayout) != null) {
             // Landscape view found, load fragment
             tablet = true;
+            landscape = true;
         }
 
         // TODO : Find more elegant way of finding whether we're tablet
 
+        String fragmentOneTag = null;
+        String fragmentTwoTag = null;
 
-        //setFabSpot();
-        if (params == null)
-            params = lastParams;
+        FragmentManager fragmentManager = getSupportFragmentManager();
+
         switch (action) {
+            case LOG_SPOT:
+                doLogSpot();
+                break;
             case CLASS_LIST:
-                fragment = new ClassListFragment();
+                fragment = fragmentManager.findFragmentByTag("CLASSLIST");
+                if (fragment == null)
+                    fragment = new ClassListFragment();
+                fragmentOneTag = "CLASSLIST";
+                Log.i("MA", "Set to load class list");
                 if (landscape) {
                     // We're landscape so need to load train list as well
-                    TrainListFragment mTrainlistFragment = new TrainListFragment();
-                    mTrainlistFragment.forcePortrait();
+                    TrainListFragment mTrainlistFragment = (TrainListFragment) fragmentManager.findFragmentByTag("TRAINLIST");
+                    if (mTrainlistFragment == null)
+                        mTrainlistFragment = new TrainListFragment();
                     String classToShow = (params == null ? "1" : params.get(CLASS_NUM_KEY));
-                    Log.i("MA", "loadFragment, showing class in secondFragment " + classToShow);
                     mTrainlistFragment.setShowTrainsForClass(classToShow);
 
                     secondFragment = mTrainlistFragment;
+                    fragmentTwoTag = "TRAINLIST_LAND";
+                    Log.i("MA", "Set to load train list " + landscape);
                 }
+                break;
 
-                break;
-            case LOG_SPOT:
-                setFabSave();
-                // Only load a new fragment if we're not restoring a LogSpotFragment - only layout changes, not configuration of panels
-                if (fragment == null || !(fragment instanceof LogSpotFragment)) {
-                    fragment = new LogSpotFragment();
-                    ((LogSpotFragment)fragment).clear();
-                    if (params != null) {
-                        Log.i("MA", "params = "+params.get(TRAIN_NUM_KEY));
-                        if (params.get(IMAGES_KEY) != null) {
-                            // If we take a photo from anywhere other than log, start the Log with the image
-                            Log.i("MA", "Setting logspot to show image : " + params.get(IMAGES_KEY));
-                            ((LogSpotFragment) fragment).setImage(params.get(IMAGES_KEY));
-                        } else {
-                            ((LogSpotFragment) fragment).setTrainClass(params.get(CLASS_NUM_KEY));
-                            ((LogSpotFragment) fragment).setTrainNum(params.get(TRAIN_NUM_KEY));
-                        }
-                    }
-                } //else return;
-                break;
             case TRAIN_LIST:
-                if (!(fragment instanceof TrainListFragment)) {
+                fragment = fragmentManager.findFragmentByTag("TRAINLIST");
+                if (fragment == null) {
                     TrainListFragment mTrainListFragment = new TrainListFragment();
                     fragment = mTrainListFragment;
                 }
@@ -426,22 +455,15 @@ public class MainActivity extends AppCompatActivity
                         ((TrainListFragment) fragment).setShowTrainsForClass(classToShow);
                     }
                 } else {
-                    Log.i("MA", "call to load trainList with null arguments, using " + lastParams);
-                    if (lastParams == null) {
-                        // Last resort = if we can't get details of class we were showing, show class list
-                        loadFragment(CLASS_LIST, true, null);
-                        return;
-                    }
-                    String classToShow = lastParams.get(CLASS_NUM_KEY);
-
-                    Log.i("MA", "loadFragment, (port) showing class " + classToShow);
-                    if (classToShow != null) {
-                        ((TrainListFragment) fragment).setShowTrainsForClass(classToShow);
-                    }
+                    // Last resort = if we can't get details of class we were showing, show class list
+                    loadFragment(CLASS_LIST, true, null);
+                    return;
                 }
 
+                fragmentOneTag = "TRAINLIST";
                 if (landscape) {
                     // If we're landscape, the train list goes on the right, class list on the left
+
                     TrainDetailFragment mTrainDetailFragment = new TrainDetailFragment();
                     mTrainDetailFragment.forcePortrait(true);
                     if (params != null) {
@@ -450,13 +472,15 @@ public class MainActivity extends AppCompatActivity
                         mTrainDetailFragment.setShowDetailsForTrain(classToShow, trainToShow);
                     }
                     secondFragment = mTrainDetailFragment;
+                    fragmentTwoTag = "DETAIL";
                 }
                 break;
             case TRAIN_DETAIL:
                 // if landscape, train details on the right, train list on left, unless showing notification
                 // Then fill the screen
                 if (landscape && trainParcel == null) {
-                    if (!(fragment instanceof TrainListFragment)) {
+                    fragment = fragmentManager.findFragmentByTag("TRAINLIST");
+                    if (fragment == null) {
                         TrainListFragment mTrainListFragmentForDetail = new TrainListFragment();
                         fragment = mTrainListFragmentForDetail;
                         String classToShowForDetail = (params == null ? "1" : params.get(CLASS_NUM_KEY));
@@ -464,11 +488,15 @@ public class MainActivity extends AppCompatActivity
                         secondFragment = new TrainDetailFragment();
                         ((TrainDetailFragment) secondFragment).forcePortrait(true);
                         Log.i("MA", "loadFragment, (land, traininfo) showing class " + classToShowForDetail);
+                        fragmentOneTag = "TRAINLIST";
+                        fragmentTwoTag = "DETAIL";
                     }
                 } else {
                     // is fragment current TrainDetailFragment? Might be if we've been paused. Only load new if not
-                    if (!(fragment instanceof TrainDetailFragment)) {
+                    fragment = fragmentManager.findFragmentByTag("DETAIL");
+                    if (fragment == null) {
                         fragment = new TrainDetailFragment();
+                        fragmentOneTag = "DETAIL";
                     }
                 }
                 if (params != null) {
@@ -495,49 +523,24 @@ public class MainActivity extends AppCompatActivity
                 throw new RuntimeException("Operation not supported");
         }
 
-
         Log.i("MA", "currentActivity = " + (currentAction == null ? "null" : currentAction));
         Log.i("MA", "fragment = " + (fragment == null ? "null" : fragment));
         Log.i("MA", "secondFragemt = " + (secondFragment == null ? "null" : secondFragment));
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            fragment.setEnterTransition(new Explode());
-            fragment.setReturnTransition(new Explode());
+        // Swap in the fragment
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        transaction.replace(R.id.mainContainer, fragment, fragmentOneTag);
+
+        if (secondFragment != null) {
+            Fragment fragmentById = fragmentManager.findFragmentById(R.id.landscapeLayout);
+            transaction.replace(R.id.landscapeLayout, secondFragment, fragmentTwoTag);
         }
 
-        // Swap in the fragment
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        FragmentTransaction transaction = fragmentManager.beginTransaction();
-
-        transaction.replace(R.id.mainContainer, fragment, "MAIN_FRAGMENT");
-
-
         if (addToBackStack) {
-            //       transaction.addToBackStack(null);
-            actionStack.push(action);
+            transaction.addToBackStack(null);
         }
 
         transaction.commit();
-
-        if (secondFragment != null) {
-            Fragment fragmentById = fragmentManager.findFragmentById(R.id.fragmentHolder);
-            if (fragmentById != null) {
-                transaction.remove(fragmentById);
-                transaction.add(R.id.fragmentHolder, secondFragment, "SECOND_FRAGMENT");
-            } else
-                transaction.replace(R.id.fragmentHolder, secondFragment, "SECOND_FRAGMENT");
-        }
-
-        tablet = false;
-        landscape = false;
-        // Now that the fragment has loaded, check for the presence of Landscape view holders which indicate we're
-        // on a tablet
-
-        if (findViewById(R.id.landscapeLayout) != null) {
-            // Landscape train list! Load train details fragment into holder
-            tablet = true;
-            landscape = true;
-        }
 
         Log.i("MA", "fragment loaded, tablet = " + tablet + ", landscape = " + landscape);
         currentAction = action;
@@ -548,67 +551,53 @@ public class MainActivity extends AppCompatActivity
         // Handler for click events from the class list
         Map args = new HashMap();
         args.put(CLASS_NUM_KEY, classNum);
-        landscape = isLandscape(this);
         if (landscape) {
-            if (!(secondFragment instanceof TrainListFragment))
-                secondFragment = new TrainListFragment();
-            // Current action doesn't change as we still show class list in landscape, tell second fragment to load new class
-            ((TrainListFragment) secondFragment).setShowTrainsForClass(classNum);
-            ((TrainListFragment) secondFragment).reloadTrainList();
+            if (!(secondFragment instanceof TrainListFragment)) {
+                //   secondFragment = new TrainListFragment();
+            } else {
+                // Current action doesn't change as we still show class list in landscape, tell second fragment to load new class
+                ((TrainListFragment) secondFragment).setShowTrainsForClass(classNum);
+                ((TrainListFragment) secondFragment).reloadTrainList();
+            }
         } else {
-            Log.i("MA", "click - loading just train list...");
             loadFragment(TRAIN_LIST, true, args);
         }
-        Log.i("MA", "display trains in class " + classNum);
         TrainspotterSharedPreferences.setClass(classNum);
         //View view = findViewById(R.id.trainListFragmentHolder);
     }
-
 
     // Handler for interaction with TrainListFragment
     @Override
     public void onShowTrainDetails(String classNum, String trainNum) {
         // TODO : depending on layout, if Tablet, left pane = train list, right = train details
         // TODO : if phone, load in train details fragment
-        Log.i("MA", "onShowTrainDetails " + classNum + ", " + trainNum);
         Map args = new HashMap();
         args.put(CLASS_NUM_KEY, classNum);
         args.put(TRAIN_NUM_KEY, trainNum);
         if (landscape) {
             if (secondFragment instanceof TrainDetailFragment) {
                 // Current action doesn't change as we still show class list in landscape, tell second fragment to load new class
-                Log.i("MA", "TDF - resetData");
                 ((TrainDetailFragment) secondFragment).resetData();
                 ((TrainDetailFragment) secondFragment).setShowDetailsForTrain(classNum, trainNum);
                 ((TrainDetailFragment) secondFragment).fetchTrainData();
                 //((TrainDetailFragment)secondFragment).reloadTrainList();
             } else {
-                // need to load train list, add us to the right
-                // Unload second fragment first, prevents crashing when moving back
-                getSupportFragmentManager().beginTransaction().remove(secondFragment).commit();
-                getSupportFragmentManager().beginTransaction().remove(fragment).commit();
                 loadFragment(TRAIN_LIST, true, args);
                 // Now display
                 if (secondFragment instanceof TrainDetailFragment) {
                     ((TrainDetailFragment) secondFragment).setShowDetailsForTrain(classNum, trainNum);
-                } else {
-                    Log.i("MA", "onShowTrainDetails = Second fragment still not details?");
                 }
             }
         } else {
             loadFragment(TRAIN_DETAIL, true, args);
         }
-        Log.i("MA", "onShowTrainDetails display train " + classNum + ", " + trainNum);
         TrainspotterSharedPreferences.setTrain(classNum, trainNum);
     }
 
     @Override
     public void onAddSightingForTrain(String classNum, String trainNum) {
         // Called if we click to add a sighting when we're displaying a trains details
-        Map <String, String> params = new HashMap();
-        params.put(Constant.CLASS_NUM_KEY, classNum);
-        params.put(Constant.TRAIN_NUM_KEY, trainNum);
-        loadFragment(LOG_SPOT, true, params);
+        doLogSpot(classNum, trainNum);
     }
 
     @Override
@@ -621,47 +610,72 @@ public class MainActivity extends AppCompatActivity
     // Helper methods to alter the behaviour of the FAB
 
     private void setFabSpot() {
-        // The usual FAB action is to add a sighting
+        // Initialise the floating action button
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setImageDrawable(getResources().getDrawable(drawable.ic_menu_add));
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Map<String, String> params = new HashMap();
-                // Load the "Spotting" fragment, save on the backstack
-                if (currentAction == TRAIN_DETAIL) {
-                    // we're showing a train? If so, add log for that one
-                    if (fragment instanceof TrainDetailFragment) {
-                        TrainDetail currentTrain = ((TrainDetailFragment) fragment).getCurrentTrain();
-                        if (currentTrain != null && currentTrain.getTrain() != null) {
-
-                            params.put(CLASS_NUM_KEY, currentTrain.getTrain().getClass_());
-                            params.put(TRAIN_NUM_KEY, currentTrain.getTrain().getNumber());
-                        }
-                    }
-                }
-                Log.i("MA", "FAB = params = "+params.get(TRAIN_NUM_KEY));
-                loadFragment(CURRENT_ACTION.LOG_SPOT, true, params);
+                doLogSpot();
             }
         });
     }
 
-    private void setFabSave() {
-        // When the Add Sighting fragment is shown, FAB should save the sighting
-        fab.setImageDrawable(getResources().getDrawable(drawable.ic_menu_save));
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (fragment instanceof LogSpotFragment) {
-                    //Get the fragment
-                    LogSpotFragment logSpotFragment = (LogSpotFragment) fragment;
-                    //And save - if returns true it has saved, so we can close fragment by simulating Back Pressed
-                    if (logSpotFragment.handleSave())
-                        onBackPressed();
-                } else {
-                    Log.i("MA", "Save pressed on none savable screen?");
+    public void doLogSpot(String trainClass, String trainNum) {
+        // Method to launch the "Log sighting" activity
+        Intent intent = new Intent(this, LogSpotActivity.class);
+        if (trainClass != null)
+            intent.putExtra(CLASS_NUM_KEY, trainClass);
+        if (trainNum != null)
+            intent.putExtra(TRAIN_NUM_KEY, trainNum);
+
+        startActivity(intent);
+    }
+
+    public void doLogSpot() {
+        // Method called from main activity, checks if we're showing a trains details. If so, open "Log sighting"
+        // with the train number completed
+        String trainClass = null;
+        String trainNum = null;
+        if (currentAction == TRAIN_DETAIL) {
+            // we're showing a train? If so, add log for that one
+            if (fragment instanceof TrainDetailFragment) {
+                TrainDetail currentTrain = ((TrainDetailFragment) fragment).getCurrentTrain();
+                if (currentTrain != null && currentTrain.getTrain() != null) {
+                    trainClass = currentTrain.getTrain().getClass_();
+                    trainNum = currentTrain.getTrain().getNumber();
                 }
             }
-        });
+        }
+
+        doLogSpot(trainClass, trainNum);
+    }
+
+    public void doLogSpot(String imagePath) {
+        if (imagePath == null || imagePath.length() == 0)
+            return;
+        // We've taken a picture, so add a log for it!
+        String trainClass = null;
+        String trainNum = null;
+        if (currentAction == TRAIN_DETAIL) {
+            // we're showing a train? If so, add log for that one
+            if (fragment instanceof TrainDetailFragment) {
+                TrainDetail currentTrain = ((TrainDetailFragment) fragment).getCurrentTrain();
+                if (currentTrain != null && currentTrain.getTrain() != null) {
+                    trainClass = currentTrain.getTrain().getClass_();
+                    trainNum = currentTrain.getTrain().getNumber();
+                }
+            }
+        }
+
+        Intent intent = new Intent(this, LogSpotActivity.class);
+        if (trainClass != null)
+            intent.putExtra(CLASS_NUM_KEY, trainClass);
+        if (trainNum != null)
+            intent.putExtra(TRAIN_NUM_KEY, trainNum);
+        intent.putExtra(Constant.IMAGES_KEY, imagePath);
+
+        startActivity(intent);
     }
 
     // Called when the permission dialog is closed
@@ -676,14 +690,6 @@ public class MainActivity extends AppCompatActivity
                     android.Manifest.permission.ACCESS_FINE_LOCATION)
                     == PackageManager.PERMISSION_GRANTED) {
                 switch (requestCode) {
-                    case MY_PERMISSIONS_REQUEST_LOCATION_FROM_SPOT: {
-                        Log.i("MA", "permission call back from logspot, fragment = " + fragment);
-                        if (fragment instanceof LogSpotFragment) {
-                            Log.i("MA", "setting location enabled on log spot to true");
-                            ((LogSpotFragment) fragment).getmGoogleMap().setMyLocationEnabled(true);
-                        }
-                    }
-                    break;
                     case MY_PERMISSIONS_REQUEST_LOCATION_FROM_DETAILS: {
                         if (fragment instanceof TrainDetailFragment) {
                             ((TrainDetailFragment) fragment).getGoogleMap().setMyLocationEnabled(true);
@@ -697,40 +703,19 @@ public class MainActivity extends AppCompatActivity
                         mCamera.takePicture();
                     }
                     break;
-                    case MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_SPOT: {
-                        if (fragment instanceof LogSpotFragment) {
-                            // Tell LogSpot fragment to try taking another photo
-                            ((LogSpotFragment) fragment).onClick(TAKE_PHOTO);
-                        }
-                    }
-                    break;
                 }
             }
-
         }
     }
 
     // Camera callback
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_IMAGE_CAPTURE_FROM_SPOT && resultCode == RESULT_OK) {
-            Log.i("MA", "passing image to Log fragment : " + fragment);
-            // Was image request sent from within LogSpot fragment? If so, pass on the message
-            if (fragment instanceof LogSpotFragment) {
-                ((LogSpotFragment) fragment).onImageReady();
-            }
-        } else if (requestCode == REQUEST_IMAGE_CAPTURE_FROM_MAIN && resultCode == RESULT_OK) {
-            // Was image request sent from MainActivity? Start LogSpot to save it!
-            Log.i("MA", "image " + mCamera.getFilename() + " is ready for access! Starting LogSpot");
-            // Set a flag so when we get back to onResume, we can load in the new Fragment
-            logFromImage = true;
-            //  Map params = new HashMap();
-            //  params.put(IMAGES_KEY, mCamera.getFilename());
-            //    loadFragment(LOG_SPOT, true, params);
+        if (requestCode == REQUEST_IMAGE_CAPTURE_FROM_MAIN && resultCode == RESULT_OK) {
+            doLogSpot(mCamera.getFilename());
         } else if (requestCode == PICK_IMAGE_FROM_GALLERY && resultCode == RESULT_OK) {
             // Image picked!
             Uri selectedImage = data.getData();
-            Log.i("MA", "image passed to onActivityResult, Uri = "+selectedImage);
 
             String[] filePathColumn = {MediaStore.Images.Media.DATA};
             Cursor cursor = getContentResolver().query(selectedImage, filePathColumn, null, null, null);
@@ -739,9 +724,7 @@ public class MainActivity extends AppCompatActivity
             String picturePath = cursor.getString(columnIndex);
             cursor.close();
 
-            mCamera = new Camera(context, Constant.REQUEST_IMAGE_CAPTURE_FROM_MAIN, Constant.MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_SPOT);
-            mCamera.setFilename(picturePath);
-            logFromImage = true;
+            doLogSpot(picturePath);
         }
     }
 
