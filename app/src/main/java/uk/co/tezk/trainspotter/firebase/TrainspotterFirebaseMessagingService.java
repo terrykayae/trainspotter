@@ -18,7 +18,7 @@ import java.util.Map;
 import uk.co.tezk.trainspotter.MainActivity;
 import uk.co.tezk.trainspotter.R;
 import uk.co.tezk.trainspotter.model.Constant;
-import uk.co.tezk.trainspotter.parcel.TrainParcel;
+import uk.co.tezk.trainspotter.model.parcel.TrainParcel;
 
 /**
  * Created by tezk on 19/05/17.

@@ -35,17 +35,16 @@ import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import uk.co.tezk.trainspotter.MainActivity;
 import uk.co.tezk.trainspotter.R;
-import uk.co.tezk.trainspotter.Utilitity;
+import uk.co.tezk.trainspotter.utility.Utilitity;
 import uk.co.tezk.trainspotter.adapters.GalleryRecyclerViewAdapter;
 import uk.co.tezk.trainspotter.interfaces.TrainspotterDialogSupport;
 import uk.co.tezk.trainspotter.model.Constant;
 import uk.co.tezk.trainspotter.model.SightingDetails;
 import uk.co.tezk.trainspotter.model.TrainDetail;
 import uk.co.tezk.trainspotter.model.TrainListItem;
-import uk.co.tezk.trainspotter.parcel.MapViewParcelable;
-import uk.co.tezk.trainspotter.parcel.TrainParcel;
+import uk.co.tezk.trainspotter.model.parcel.MapViewParcelable;
+import uk.co.tezk.trainspotter.model.parcel.TrainParcel;
 import uk.co.tezk.trainspotter.presenter.ITrainDetailPresenter;
 import uk.co.tezk.trainspotter.presenter.TrainDetailPresenterImpl;
 
@@ -204,10 +203,17 @@ public class TrainDetailFragment extends Fragment implements
         //rvGallery.getAdapter().
         galleryRecyclerViewAdapter = new GalleryRecyclerViewAdapter(imageList, getContext(), this, false);
         rvGallery.setAdapter(galleryRecyclerViewAdapter);
+        if (mapReady) {
+            mGoogleMap.clear();
+        }
     }
 
     public void fetchTrainData() {
         // Trigger call to the presenter to fetch the details of the train
+        if (presenter == null) {
+            presenter = new TrainDetailPresenterImpl();
+            presenter.bind(this);
+        }
         if (currentTrain != null)
             presenter.retrieveData(currentTrain.getTrain().getClass_(), currentTrain.getTrain().getNumber());
     }
@@ -224,6 +230,13 @@ public class TrainDetailFragment extends Fragment implements
         rvGallery.setAdapter(galleryRecyclerViewAdapter);
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false);
         rvGallery.setLayoutManager(layoutManager);
+        // Load the map
+       // FragmentManager fragmentManager = ((MainActivity) context).getSupportFragmentManager();
+        FragmentManager fragmentManager = getChildFragmentManager();
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        transaction.add(R.id.mapHolder, mSupportMapFragment);
+        mSupportMapFragment.getMapAsync(this);
+        transaction.commit();
     }
 
     @Override
@@ -248,12 +261,7 @@ public class TrainDetailFragment extends Fragment implements
     @Override
     public void onResume() {
         super.onResume();
-        // Load the map
-        FragmentManager fragmentManager = ((MainActivity) context).getSupportFragmentManager();
-        FragmentTransaction transaction = fragmentManager.beginTransaction();
-        transaction.add(R.id.mapHolder, mSupportMapFragment);
-        mSupportMapFragment.getMapAsync(this);
-        transaction.commit();
+
     }
 
     @Override
@@ -261,19 +269,16 @@ public class TrainDetailFragment extends Fragment implements
         super.onPause();
         // Store map settings
         // Save the map position
-        CameraPosition cameraPosition = mGoogleMap.getCameraPosition();
-        mapSettings = new MapViewParcelable(
-                cameraPosition.target.latitude,
-                cameraPosition.target.longitude,
-                cameraPosition.zoom,
-                cameraPosition.bearing,
-                cameraPosition.tilt
-        );
-        // Unload the map
-        FragmentManager fragmentManager = ((MainActivity) context).getSupportFragmentManager();
-        FragmentTransaction transaction = fragmentManager.beginTransaction();
-        transaction.remove(mSupportMapFragment);
-        transaction.commit();
+        if (mGoogleMap!=null) {
+            CameraPosition cameraPosition = mGoogleMap.getCameraPosition();
+            mapSettings = new MapViewParcelable(
+                    cameraPosition.target.latitude,
+                    cameraPosition.target.longitude,
+                    cameraPosition.zoom,
+                    cameraPosition.bearing,
+                    cameraPosition.tilt
+            );
+        }
     }
 
     @Override
@@ -281,8 +286,7 @@ public class TrainDetailFragment extends Fragment implements
 
         // Save map settings into parcel
         outState.putParcelable(MAP_VIEW_PARCELABLE_KEY, mapSettings);
-    // Bug on later APIs
-     //   super.onSaveInstanceState(outState);
+
         if (currentTrain != null) {
             outState.putString(Constant.CLASS_NUM_KEY, currentTrain.getTrain().getClass_());
             outState.putString(Constant.TRAIN_NUM_KEY, currentTrain.getTrain().getNumber());
@@ -465,8 +469,10 @@ public class TrainDetailFragment extends Fragment implements
         }
 
         // If the map was already loaded, add the markers
-        if (mapReady)
+        if (mapReady) {
+            mGoogleMap.clear();
             addSightingsToMap();
+        }
     }
 
     // handle interaction from Presenter

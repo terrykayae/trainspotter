@@ -25,6 +25,8 @@ public interface ITrainListPresenter {
         void unbind();
 
         void retrieveData(String classNum);
+
+        void performSearch(String searchString) ;
     }
 
 }

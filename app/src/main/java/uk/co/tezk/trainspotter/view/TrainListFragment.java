@@ -11,7 +11,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,8 +48,6 @@ public class TrainListFragment extends Fragment implements
     List <TrainListItem> mTrainList;
     private String showTrainsForClass;
 
-    private boolean forcePortrait;
-
     @BindView(R.id.trainListRecyclerView) RecyclerView trainListRecyclerView;
 
     public String getShowTrainsForClass() {
@@ -60,17 +57,14 @@ public class TrainListFragment extends Fragment implements
     public void setShowTrainsForClass(String showTrainsForClass) {
         if (showTrainsForClass!=null)
             this.showTrainsForClass = showTrainsForClass;
+        else
+            this.showTrainsForClass = "1";
         Log.i("TLF", "Setting class to "+showTrainsForClass);
     }
 
     public TrainListFragment() {
         // Required empty public constructor
         mTrainList = new ArrayList();
-    }
-
-    public void forcePortrait() {
-        // As we use different layouts, call this to force loading of a portrait layout
-        forcePortrait = true;
     }
 
     @Override
@@ -107,7 +101,7 @@ public class TrainListFragment extends Fragment implements
         presenter.bind(this);
 
        // Inflate the layout for this fragment
-        int layout = forcePortrait?R.layout.fragment_train_list_subfragment:R.layout.fragment_train_list;
+        int layout = R.layout.fragment_train_list;
         return inflater.inflate(layout, container, false);
     }
 
@@ -120,7 +114,6 @@ public class TrainListFragment extends Fragment implements
         trainListRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         Log.i("TLF", "Get trains for "+showTrainsForClass);
         reloadTrainList();
-
     }
 
     @Override
@@ -132,8 +125,6 @@ public class TrainListFragment extends Fragment implements
     public void onSaveInstanceState(Bundle outState) {
         // Save the current class we're viewing
         outState.putString(Constant.CLASS_NUM_KEY, showTrainsForClass);
-        // Bug in later APIs
-        //super.onSaveInstanceState(outState);
     }
 
     @Override
@@ -181,6 +172,14 @@ public class TrainListFragment extends Fragment implements
         }
     }
 
+    public void searchFor(String searchString) {
+        if (presenter == null) {
+            presenter = new TrainListPresenterImpl();
+            presenter.bind(this);
+        }
+        presenter.performSearch(searchString);
+    }
+
     @Override
     public void showTrainList(List<TrainDetail> trainList) {
         Collections.sort(trainList, new Comparator<TrainDetail>() {
@@ -199,8 +198,9 @@ public class TrainListFragment extends Fragment implements
 
     @Override
     public void onErrorLoading(String message) {
-        Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
-        progressDialog.stopProgressDialog();
+//        Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
+  //      progressDialog.stopProgressDialog();
+        Log.i("TLF", "onErrorLoading = "+message);
     }
 
     @Override
@@ -219,10 +219,6 @@ public class TrainListFragment extends Fragment implements
      * fragment to allow an interaction in this fragment to be communicated
      * to the activity and potentially other fragments contained in that
      * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
      */
     public interface OnTrainListFragmentInteractionListener {
         void onShowTrainDetails(String classNum, String trainNum) ;

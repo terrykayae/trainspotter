@@ -12,7 +12,7 @@ import java.util.List;
 import uk.co.tezk.trainspotter.R;
 import uk.co.tezk.trainspotter.model.ClassDetails;
 
-import static uk.co.tezk.trainspotter.Utilitity.getClassNameFromNumber;
+import static uk.co.tezk.trainspotter.utility.Utilitity.getClassNameFromNumber;
 
 /**
  * RecyclerView adapter for the class list - shows number, number of sightings and totals

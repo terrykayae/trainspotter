@@ -37,10 +37,9 @@ import javax.inject.Inject;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import uk.co.tezk.trainspotter.MainActivity;
 import uk.co.tezk.trainspotter.R;
 import uk.co.tezk.trainspotter.TrainSpotterApplication;
-import uk.co.tezk.trainspotter.Utilitity;
+import uk.co.tezk.trainspotter.utility.Utilitity;
 import uk.co.tezk.trainspotter.adapters.GalleryRecyclerViewAdapter;
 import uk.co.tezk.trainspotter.interfaces.TrainspotterDialogSupport;
 import uk.co.tezk.trainspotter.model.Camera;
@@ -48,7 +47,7 @@ import uk.co.tezk.trainspotter.model.Constant;
 import uk.co.tezk.trainspotter.model.MyLocation;
 import uk.co.tezk.trainspotter.model.SightingDetails;
 import uk.co.tezk.trainspotter.network.Submitter;
-import uk.co.tezk.trainspotter.parcel.MapViewParcelable;
+import uk.co.tezk.trainspotter.model.parcel.MapViewParcelable;
 import uk.co.tezk.trainspotter.presenter.GeocodePresenterImpl;
 import uk.co.tezk.trainspotter.presenter.IGeocodePresenter;
 import uk.co.tezk.trainspotter.presenter.ILocationUpdatePresenter;
@@ -84,9 +83,9 @@ public class LogSpotFragment extends Fragment implements
     private List<String>imageList;
 
     // Camera helper - deals with permissions for us, static so we retain reference
-    private static Camera camera;
+    private static Camera mCamera;
     // Allow mainActivity to set our camera if they receive the clickMessage
-    public void setCamera(Camera camera) { this.camera = camera; }
+    public void setCamera(Camera camera) { this.mCamera = camera; }
 
     @Inject
     MyLocation locationPresenter;
@@ -95,7 +94,6 @@ public class LogSpotFragment extends Fragment implements
 
     //Holders for settings that might be passed in that will be needed later
     MapViewParcelable mapSettings;
-    String imageFilename;
 
     // Include getter for googlemap so mainActivity can enable location for us if needed after permission check
     public GoogleMap getmGoogleMap() {
@@ -154,15 +152,15 @@ public class LogSpotFragment extends Fragment implements
         geocodePresenter.bind(this);
 
         //initialise the gallery adapter
-        //if (galleryRecyclerViewAdapter == null)
         List <String> images = new ArrayList();
-        Log.i("LSF", "onCreate, imageFilename = "+imageFilename);
-        if (imageFilename!=null)
-            images.add(imageFilename);
+        if (mCamera!=null) {
+            String imageFilename = mCamera.getFilename();
+            Log.i("LSF", "onCreate, imageFilename = " + imageFilename);
+            if (imageFilename != null)
+                images.add(imageFilename);
+        }
         galleryRecyclerViewAdapter = new GalleryRecyclerViewAdapter(images, getContext(), this, false);
         imageList = images;
-
-        setRetainInstance(true);
     }
 
     @Override
@@ -170,11 +168,7 @@ public class LogSpotFragment extends Fragment implements
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_log_spot, container, false);
-        FragmentManager fragmentManager = ((MainActivity) context).getSupportFragmentManager();
-        FragmentTransaction transaction = fragmentManager.beginTransaction();
-        transaction.add(R.id.mapHolder, mSupportMapFragment);
-        mSupportMapFragment.getMapAsync(this);
-        transaction.commit();
+
         // Initialise Butterknife
         ButterKnife.bind(this, view);
 
@@ -200,6 +194,13 @@ public class LogSpotFragment extends Fragment implements
         } else {
             rvGallery.setVisibility(View.GONE);
         }
+
+        FragmentManager fragmentManager = getChildFragmentManager();
+
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        transaction.add(R.id.mapHolder, mSupportMapFragment);
+        mSupportMapFragment.getMapAsync(this);
+        transaction.commit();
     }
 
     @Override
@@ -239,11 +240,6 @@ public class LogSpotFragment extends Fragment implements
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        // FragmentManager fragmentManager = ((MainActivity) context).getSupportFragmentManager();
-        //   FragmentTransaction transaction = fragmentManager.beginTransaction();
-        //   transaction.remove(mSupportMapFragment);
-        //transaction.detach(mSupportMapFragment);
-        //    transaction.commit();
     }
 
     @Override
@@ -259,9 +255,6 @@ public class LogSpotFragment extends Fragment implements
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        // Bug on later APIs
-        //super.onSaveInstanceState(outState);
-
         // Save the map position
         CameraPosition cameraPosition = mGoogleMap.getCameraPosition();
         MapViewParcelable mapSettings = new MapViewParcelable(
@@ -276,7 +269,6 @@ public class LogSpotFragment extends Fragment implements
         //Save the date and train number
         outState.putString(TRAIN_NUM_KEY, etTrainId.getText().toString());
         outState.putString(DATE_RECORDED_KEY, tvDate.getText().toString());
-
 
         // Save the images
         if (imageList !=null && imageList.size()>0) {
@@ -337,7 +329,6 @@ public class LogSpotFragment extends Fragment implements
         // TODO : // FIXME
         sightingDetails.setTrainClass(trainClass==null?"0":trainClass);
         sightingDetails.setLocationName(etLocation.getText().toString());
-        //sightingDetails.setTrainClass();
         sightingDetails.setDate(tvDate.getText().toString());
         sightingDetails.setTime(Utilitity.getTime(new Date()));
         // We received a location, or one was set by user
@@ -372,10 +363,10 @@ public class LogSpotFragment extends Fragment implements
     @Override
     public void onClick(String imageUrl) {
         if (TAKE_PHOTO.equals(imageUrl)) {
-            if (camera == null)
-                camera = new Camera(context, REQUEST_IMAGE_CAPTURE_FROM_SPOT, MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_SPOT);
+            if (mCamera == null)
+                mCamera = new Camera(context, REQUEST_IMAGE_CAPTURE_FROM_SPOT, MY_PERMISSIONS_REQUEST_EXTERNAL_WRITE_FROM_SPOT);
             // Start activity, when onImageReady is called, we can get filename from camera
-            camera.takePicture();
+            mCamera.takePicture();
 
         } else {
             // TODO : Show bigger image
@@ -385,10 +376,10 @@ public class LogSpotFragment extends Fragment implements
 
     // Called by MainActivity when it receives notification that our image is ready
     public void onImageReady() {
-        String imageFilename = camera.getFilename();
+        String imageFilename = mCamera.getFilename();
         Log.i("LSF", "image ready : "+imageFilename);
         // Ask the camera to notify the gallery
-        camera.addToGallery();
+        mCamera.addToGallery();
         // update and notify the gallery adapter so it can display the image
         GalleryRecyclerViewAdapter adapter = ((GalleryRecyclerViewAdapter) rvGallery.getAdapter());
         adapter.addImageFromFile(imageFilename);
@@ -401,7 +392,8 @@ public class LogSpotFragment extends Fragment implements
 
     // If we're going to be showing an image
     public void setImage(String imageFilename) {
-        this.imageFilename = imageFilename;
+        mCamera = new Camera(getContext(), 0 ,0);
+        mCamera.setFilename(imageFilename);
     }
 
     // Callback for our Geocode api

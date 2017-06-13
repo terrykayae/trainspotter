@@ -12,7 +12,7 @@ import android.util.Log;
 import java.io.File;
 import java.io.IOException;
 
-import uk.co.tezk.trainspotter.Utilitity;
+import uk.co.tezk.trainspotter.utility.Utilitity;
 
 /**
  * Class to deal with camera and associated permissions needed to access external storage

@@ -23,6 +23,7 @@ import uk.co.tezk.trainspotter.model.TrainDetail;
 import uk.co.tezk.trainspotter.model.TrainListItem;
 import uk.co.tezk.trainspotter.realm.RealmHandler;
 
+import static android.util.Log.i;
 import static rx.Observable.concat;
 
 /**
@@ -108,7 +109,7 @@ public class TrainListPresenterImpl implements ITrainListPresenter.IPresenter {
                 .subscribe(new Observer<TrainDetail>() {
                     @Override
                     public void onCompleted() {
-                        Log.i("TLPI", "Observable onCompleted");
+                        i("TLPI", "Observable onCompleted");
                         view.showTrainList(trainDetailList);
                         view.onCompletedLoading();
                     }
@@ -123,6 +124,38 @@ public class TrainListPresenterImpl implements ITrainListPresenter.IPresenter {
                         trainDetailList.add(trainDetail);
                     }
                 }));
+    }
+
+    @Override
+    public void performSearch(String searchString) {
+        i("TLPI" ,"Performing search "+searchString);
+        RealmHandler handler = RealmHandler.getInstance();
+        Log.i("TLPI", "handler = "+handler);
+        List<TrainDetail> list = handler.performSearch(searchString);
+        i("TLPI", "list = "+list);
+        compositeSubscription.add(Observable.from(RealmHandler.getInstance().performSearch(searchString))
+                .observeOn(observeScheduler)
+            .subscribeOn(subscribeScheduler)
+                .toList()
+            .subscribe(new Observer<List<TrainDetail>>() {
+                @Override
+                public void onCompleted() {
+              //      view.onCompletedLoading();
+                    i("TLPI", "search onComplete");
+                }
+
+                @Override
+                public void onError(Throwable e) {
+            //        view.onErrorLoading(e.getMessage());
+                    i("TLPI", "search error "+e.getMessage());
+                }
+
+                @Override
+                public void onNext(List <TrainDetail> trainDetail) {
+                    view.showTrainList(trainDetail);
+                    i("TLPI", "search showing "+trainDetail);
+                }
+            }));
     }
 
     @Override

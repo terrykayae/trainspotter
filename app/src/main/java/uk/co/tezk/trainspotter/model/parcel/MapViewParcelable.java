@@ -1,4 +1,4 @@
-package uk.co.tezk.trainspotter.parcel;
+package uk.co.tezk.trainspotter.model.parcel;
 
 import android.os.Parcel;
 import android.os.Parcelable;
