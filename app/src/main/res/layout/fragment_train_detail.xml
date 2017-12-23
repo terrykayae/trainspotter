@@ -13,7 +13,6 @@
             android:id="@+id/cardViewDetails"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="@dimen/fragment_margin"
             android:elevation="2dp"
             android:backgroundTint="@color/white">
         <GridLayout

@@ -52,36 +52,7 @@ public class TrainSpotterApplication extends Application {
                 .geocoderInteractorModule(new GeocoderInteractorModule())
                 .build();
 
-        // Initialise Realm
-        Realm.init(this);
-        RealmConfiguration config = new RealmConfiguration.Builder().
-                schemaVersion(3).
-                migration(new RealmMigration() {
-                    @Override
-                    public void migrate(DynamicRealm realm, long oldVersion, long newVersion) {
-                        RealmSchema schema = realm.getSchema();
-                        Log.i("myapp", "Migration running : old = " + oldVersion + ", new = " + newVersion);
-                        if (oldVersion == 1) {
-                            //    schema.get("MyRealmObject").removeField(("String3"));
-                            //    schema.get("MyRealmObject").addField("string3", String.class);
-                            //    Log.i("myapp","schema updated");
-                            schema.get("ClassDetails").addField("totalTrains", Integer.class);
-                            Log.i("myapp","schema updated from v1");
-                            oldVersion++;
-                        }
-                        if (oldVersion == 2) {
-                            //    schema.get("MyRealmObject").removeField(("String3"));
-                            //    schema.get("MyRealmObject").addField("string3", String.class);
-                            //    Log.i("myapp","schema updated");
-                            schema.get("SightingDetails").addField("reportedToApi", Boolean.class);
-                            Log.i("myapp","schema updated from v2");
-                            oldVersion++;
-                        }
-
-                        return;
-                    }
-                }).build();
-        Realm.setDefaultConfiguration(config);
+        initialiseRealm();
 
         // LeakCanary initialisation
 
@@ -91,6 +62,35 @@ public class TrainSpotterApplication extends Application {
             return;
         }
         LeakCanary.install(this);
+    }
+
+    private void initialiseRealm() {
+        Realm.init(this);
+        RealmConfiguration config = new RealmConfiguration.Builder().
+                schemaVersion(3).
+                migration(new RealmMigration() {
+                    @Override
+                    public void migrate(DynamicRealm realm, long oldVersion, long newVersion) {
+                        RealmSchema schema = realm.getSchema();
+                         if (oldVersion == 1) {
+                            //    schema.get("MyRealmObject").removeField(("String3"));
+                            //    schema.get("MyRealmObject").addField("string3", String.class);
+                            //    Log.i("myapp","schema updated");
+                            schema.get("ClassDetails").addField("totalTrains", Integer.class);
+                            oldVersion++;
+                        }
+                        if (oldVersion == 2) {
+                            //    schema.get("MyRealmObject").removeField(("String3"));
+                            //    schema.get("MyRealmObject").addField("string3", String.class);
+                            //    Log.i("myapp","schema updated");
+                            schema.get("SightingDetails").addField("reportedToApi", Boolean.class);
+                            oldVersion++;
+                        }
+
+                        return;
+                    }
+                }).build();
+        Realm.setDefaultConfiguration(config);
     }
 
     public static TrainSpotterApplication getApplication() {

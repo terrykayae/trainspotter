@@ -143,21 +143,17 @@ public class MainActivity extends AppCompatActivity
             }
             loadFragment(currentAction, false, params);
         } else {
-            Log.i("MA", "savedInstanceState was null");
-            Log.i("MA", "onCreate, resetting class list");
             if (fragment == null)
                 loadFragment(CLASS_LIST, false, null);
 
         }
         Bundle bundle = getIntent().getExtras();
         if (getIntent().getParcelableExtra(Constant.TRAIN_PARCEL_KEY) != null) {
-            Log.i("MA", "Show train details from notification...");
             // We're to show a train!
             currentAction = TRAIN_DETAIL;
             trainParcel = getIntent().getParcelableExtra(Constant.TRAIN_PARCEL_KEY);
         } else {
             if (bundle != null && bundle.get("class") != null) {
-                Log.i("MA", "rebuilding parcelable");
                 String lat = (String) bundle.get("lat");
                 String lon = (String) bundle.get("lon");
                 String classNum = (String) bundle.get("class");
@@ -167,21 +163,12 @@ public class MainActivity extends AppCompatActivity
                 currentAction = TRAIN_DETAIL;
             }
         }
-
-        if (bundle != null) {
-            for (String each : bundle.keySet()) {
-                Log.i("MA", each + " = " + bundle.get(each));
-            }
-        } else Log.i("MA", "No intent!");
-
-        Log.i("MA", "onCreate, fragmentBackstack = " + getSupportFragmentManager().getBackStackEntryCount());
     }
 
     @Override
     protected void onStart() {
         super.onStart();
 
-        Log.i("MA", "onStart");
         // Close any progress dialogues and fade the background
         doneInitialising();
         if (currentAction == INITIALISING)
@@ -193,12 +180,6 @@ public class MainActivity extends AppCompatActivity
             params.put(Constant.CLASS_NUM_KEY, trainParcel.getTrainClass());
             params.put(Constant.TRAIN_NUM_KEY, trainParcel.getTrainNum());
         }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        Log.i("MA", "onResume");
     }
 
     @Override
@@ -241,7 +222,6 @@ public class MainActivity extends AppCompatActivity
 
             final PublishSubject<String> subject = PublishSubject.create();
 
-
             searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String query) {
@@ -250,7 +230,6 @@ public class MainActivity extends AppCompatActivity
 
                 @Override
                 public boolean onQueryTextChange(String newText) {
-                    Log.i("MA", "onQueryTextChanged = " + newText);
                     subject.onNext(newText.toString());
 
                     return true;
@@ -281,13 +260,10 @@ public class MainActivity extends AppCompatActivity
                             }
                             if (currentAction != TRAIN_LIST)
                                 loadFragment(TRAIN_LIST, true, null);
-                            Log.i("MA", "Search for " + s);
                             TrainListFragment trainListFragment = (TrainListFragment) fragment;
                             trainListFragment.searchFor(s);
                         }
                     });
-        } else {
-            Log.i("MA", "SearchView was null");
         }
         return true;
     }
@@ -383,18 +359,10 @@ public class MainActivity extends AppCompatActivity
         // Save details of most recent train / class
         outState.putString(CLASS_NUM_KEY, currentClass);
         outState.putString(TRAIN_NUM_KEY, currentTrain);
-
-        Log.i("MA", "onSaveInstanceState, fragmentBackstack = " + getSupportFragmentManager().getBackStackEntryCount());
-
     }
 
     private void loadFragment(CURRENT_ACTION action, boolean addToBackStack, Map<String, String> params) {
-        Log.i("MA", "Loading fragment " + action + " with addToBackStack " + addToBackStack);
-        Log.i("MA", "fragment = " + fragment + ", currentAction = " + currentAction);
-
-        //secondFragment = null;
-
-        if (params == null) {
+         if (params == null) {
             params = new HashMap<>();
             if (TrainspotterSharedPreferences.getClassNumber() != null)
                 params.put(CLASS_NUM_KEY, TrainspotterSharedPreferences.getClassNumber());
@@ -427,7 +395,6 @@ public class MainActivity extends AppCompatActivity
                 if (fragment == null)
                     fragment = new ClassListFragment();
                 fragmentOneTag = "CLASSLIST";
-                Log.i("MA", "Set to load class list");
                 if (landscape) {
                     // We're landscape so need to load train list as well
                     TrainListFragment mTrainlistFragment = (TrainListFragment) fragmentManager.findFragmentByTag("TRAINLIST");
@@ -438,7 +405,6 @@ public class MainActivity extends AppCompatActivity
 
                     secondFragment = mTrainlistFragment;
                     fragmentTwoTag = "TRAINLIST_LAND";
-                    Log.i("MA", "Set to load train list " + landscape);
                 }
                 break;
 
@@ -450,7 +416,6 @@ public class MainActivity extends AppCompatActivity
                 }
                 if (params != null) {
                     String classToShow = params.get(CLASS_NUM_KEY);
-                    Log.i("MA", "loadFragment, (port) showing class " + classToShow);
                     if (classToShow != null) {
                         ((TrainListFragment) fragment).setShowTrainsForClass(classToShow);
                     }
@@ -523,10 +488,6 @@ public class MainActivity extends AppCompatActivity
                 throw new RuntimeException("Operation not supported");
         }
 
-        Log.i("MA", "currentActivity = " + (currentAction == null ? "null" : currentAction));
-        Log.i("MA", "fragment = " + (fragment == null ? "null" : fragment));
-        Log.i("MA", "secondFragemt = " + (secondFragment == null ? "null" : secondFragment));
-
         // Swap in the fragment
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         transaction.replace(R.id.mainContainer, fragment, fragmentOneTag);
@@ -539,10 +500,7 @@ public class MainActivity extends AppCompatActivity
         if (addToBackStack) {
             transaction.addToBackStack(null);
         }
-
         transaction.commit();
-
-        Log.i("MA", "fragment loaded, tablet = " + tablet + ", landscape = " + landscape);
         currentAction = action;
     }
 

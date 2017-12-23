@@ -143,10 +143,6 @@ public class TrainDetailFragment extends Fragment implements
         }
         currentTrain.getTrain().setClass_(classNumber);
         currentTrain.getTrain().setNumber(trainNumber);
-
-        Log.i("TDF", "setting currentTrain = " + currentTrain);
-        Log.i("TDF", "class " + currentTrain.getTrain().getClass_());
-        Log.i("TDF", "id " + currentTrain.getTrain().getNumber());
     }
 
     @Override
@@ -256,12 +252,6 @@ public class TrainDetailFragment extends Fragment implements
                 onMapReady(mGoogleMap);
             }
         }
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-
     }
 
     @Override
@@ -412,7 +402,6 @@ public class TrainDetailFragment extends Fragment implements
     // Called by our presenter
     @Override
     public void showTrainDetails(TrainDetail trainDetail) {
-        Log.i("TDF", "showTrainDetails " + trainDetail);
         this.currentTrain = trainDetail;
         tvClass.setText(trainDetail.getTrain().getClass_());
         tvTrainNumber.setText(trainDetail.getTrain().getNumber());
@@ -422,7 +411,6 @@ public class TrainDetailFragment extends Fragment implements
         tvTrainDepot.setText(trainDetail.getTrain().getDepot());
         if (trainParcel != null) {
             // We're showing a notification, remove the sightings and add our own
-            Log.i("TDF","we got a parcel! "+trainParcel);
             List<SightingDetails> newSightings = new ArrayList();
             SightingDetails sighting = new SightingDetails("Just now", Float.parseFloat(trainParcel.getLat()), Float.parseFloat(trainParcel.getLon()));
 
@@ -430,7 +418,6 @@ public class TrainDetailFragment extends Fragment implements
             trainDetail.setSightings(newSightings);
         } else {
             //We don't want to show images for notifications, so only add here
-            Log.i("MA","Train images ======= "+trainDetail.getImages());
             if (trainDetail.getImages() == null || trainDetail.getImages().size() == 0) {
                 // No images in this train - if the train list is empty, hide the gallery
                 if (imageList.size() == 0) {
@@ -479,13 +466,11 @@ public class TrainDetailFragment extends Fragment implements
 
     @Override
     public void onStartLoading() {
-        Log.i("TDF", "onStartLoading");
         trainspotterDialog.startProgressDialog();
     }
 
     @Override
     public void onErrorLoading(String message) {
-        Log.i("TDF", "onError : " + message);
         trainspotterDialog.showErrorMessage(message);
         trainspotterDialog.stopProgressDialog();
     }
@@ -498,8 +483,6 @@ public class TrainDetailFragment extends Fragment implements
     // Called if we're showing a notification from Firebase messaging, just add the one sighting...
     public void setNotifyFor(TrainParcel trainParcel) {
         this.trainParcel = trainParcel;
-        Log.i("TDF", "Setting train from parcel");
         setShowDetailsForTrain(trainParcel.getTrainClass(), trainParcel.getTrainNum());
-        Log.i("TDF", "Values : " + currentTrain.getTrain().getNumber());
     }
 }

@@ -5,6 +5,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -90,15 +91,11 @@ public class TrainListFragment extends Fragment implements
     }
 
     @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-    }
-
-    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         presenter = new TrainListPresenterImpl();
         presenter.bind(this);
+
 
        // Inflate the layout for this fragment
         int layout = R.layout.fragment_train_list;
@@ -112,13 +109,10 @@ public class TrainListFragment extends Fragment implements
         ButterKnife.bind(this, view);
 
         trainListRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        Log.i("TLF", "Get trains for "+showTrainsForClass);
+        DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(trainListRecyclerView.getContext(),
+                DividerItemDecoration.VERTICAL);
+        trainListRecyclerView.addItemDecoration(dividerItemDecoration);
         reloadTrainList();
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
     }
 
     @Override
@@ -139,18 +133,12 @@ public class TrainListFragment extends Fragment implements
     }
 
     @Override
-    public void onDetach() {
-        super.onDetach();
-    }
-
-    @Override
     public void onDestroyView() {
         super.onDestroyView();
         presenter.unbind();
     }
 
     public void reloadTrainList() {
-        Log.i("TLF", "reloadTrainList : "+showTrainsForClass);
         if (mTrainList.size()==0) {
             if (showTrainsForClass==null || showTrainsForClass.equals("0")) {
                 return;
