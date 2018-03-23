@@ -26,10 +26,6 @@ import uk.co.tezk.trainspotter.R;
 
 import static uk.co.tezk.trainspotter.model.Constant.TAKE_PHOTO;
 
-/**
- * Created by tezk on 17/05/17.
- */
-
 public class GalleryRecyclerViewAdapter extends RecyclerView.Adapter<GalleryRecyclerViewAdapter.GalleryViewHolder> {
 
     private List<GalleryDrawable> images;

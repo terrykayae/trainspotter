@@ -8,5 +8,5 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     app:layoutManager="LinearLayoutManager"
-    tools:context="uk.co.tezk.trainspotter.view.ClassListFragment"
+    tools:context="uk.co.tezk.trainspotter.classList.ClassListFragment"
     tools:listitem="@layout/class_list_item" />

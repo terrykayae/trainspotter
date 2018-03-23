@@ -1,7 +1,6 @@
 package uk.co.tezk.trainspotter;
 
 import android.app.Application;
-import android.util.Log;
 
 import com.squareup.leakcanary.LeakCanary;
 
@@ -10,18 +9,19 @@ import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmMigration;
 import io.realm.RealmSchema;
-import uk.co.tezk.trainspotter.injection.DaggerGeocoderInteractorComponent;
+import uk.co.tezk.trainspotter.geocode.injection.DaggerGeocoderInteractorComponent;
 import uk.co.tezk.trainspotter.injection.DaggerLocationComponent;
 import uk.co.tezk.trainspotter.injection.DaggerNetworkComponent;
+import uk.co.tezk.trainspotter.injection.DaggerPresenterComponent;
 import uk.co.tezk.trainspotter.injection.DaggerTrainSpotterInteractorComponent;
-import uk.co.tezk.trainspotter.injection.GeocoderInteractorComponent;
-import uk.co.tezk.trainspotter.injection.GeocoderInteractorModule;
+import uk.co.tezk.trainspotter.geocode.injection.GeocoderInteractorComponent;
+import uk.co.tezk.trainspotter.geocode.injection.GeocoderInteractorModule;
 import uk.co.tezk.trainspotter.injection.LocationComponent;
 import uk.co.tezk.trainspotter.injection.NetworkComponent;
+import uk.co.tezk.trainspotter.injection.PresenterComponent;
+import uk.co.tezk.trainspotter.injection.PresentersModule;
 import uk.co.tezk.trainspotter.injection.TrainSpotterInteractorComponent;
 import uk.co.tezk.trainspotter.injection.TrainSpotterInteractorModule;
-
-//import uk.co.tezk.trainspotter.network.DaggerNetworkComponent;
 
 /**
  * Created by tezk on 11/05/17.
@@ -34,6 +34,7 @@ public class TrainSpotterApplication extends Application {
     TrainSpotterInteractorComponent trainSpotterInteractorComponent;
     LocationComponent locationComponent;
     GeocoderInteractorComponent geocoderInteractorComponent;
+    PresenterComponent presenterComponent;
 
     @Override
     public void onCreate() {
@@ -51,6 +52,11 @@ public class TrainSpotterApplication extends Application {
                 .networkComponent(networkComponent)
                 .geocoderInteractorModule(new GeocoderInteractorModule())
                 .build();
+        presenterComponent = DaggerPresenterComponent.builder()
+                .trainSpotterInteractorComponent(trainSpotterInteractorComponent)
+                .presentersModule(new PresentersModule())
+                .build();
+
 
         initialiseRealm();
 
@@ -110,4 +116,6 @@ public class TrainSpotterApplication extends Application {
     }
 
     public GeocoderInteractorComponent getGeocoderInteractorComponent() { return geocoderInteractorComponent; }
+
+    public PresenterComponent getPresenterComponent() { return presenterComponent; }
 }

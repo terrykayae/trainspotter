@@ -10,7 +10,6 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -39,18 +38,18 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import uk.co.tezk.trainspotter.R;
 import uk.co.tezk.trainspotter.TrainSpotterApplication;
+import uk.co.tezk.trainspotter.geocode.GeocodePresenter;
 import uk.co.tezk.trainspotter.utility.Utilitity;
 import uk.co.tezk.trainspotter.adapters.GalleryRecyclerViewAdapter;
-import uk.co.tezk.trainspotter.interfaces.TrainspotterDialogSupport;
+import uk.co.tezk.trainspotter.base.TrainspotterDialogSupport;
 import uk.co.tezk.trainspotter.model.Camera;
 import uk.co.tezk.trainspotter.model.Constant;
 import uk.co.tezk.trainspotter.model.MyLocation;
 import uk.co.tezk.trainspotter.model.SightingDetails;
 import uk.co.tezk.trainspotter.network.Submitter;
 import uk.co.tezk.trainspotter.model.parcel.MapViewParcelable;
-import uk.co.tezk.trainspotter.presenter.GeocodePresenterImpl;
-import uk.co.tezk.trainspotter.presenter.IGeocodePresenter;
-import uk.co.tezk.trainspotter.presenter.ILocationUpdatePresenter;
+import uk.co.tezk.trainspotter.geocode.GeocodeContract;
+import uk.co.tezk.trainspotter.presenter.LocationUpdateContract;
 import uk.co.tezk.trainspotter.realm.RealmHandler;
 
 import static uk.co.tezk.trainspotter.model.Constant.DATE_RECORDED_KEY;
@@ -69,8 +68,8 @@ import static uk.co.tezk.trainspotter.model.Constant.TRAIN_NUM_KEY;
  */
 public class LogSpotFragment extends Fragment implements
         OnMapReadyCallback,
-        ILocationUpdatePresenter.IView,
-        IGeocodePresenter.IView,
+        LocationUpdateContract.View,
+        GeocodeContract.View,
         GalleryRecyclerViewAdapter.OnImageClickListener {
     private Context context;
 
@@ -90,7 +89,7 @@ public class LogSpotFragment extends Fragment implements
     @Inject
     MyLocation locationPresenter;
 
-    IGeocodePresenter.IPresenter geocodePresenter;
+    GeocodeContract.Presenter geocodePresenter;
 
     //Holders for settings that might be passed in that will be needed later
     MapViewParcelable mapSettings;
@@ -147,8 +146,8 @@ public class LogSpotFragment extends Fragment implements
         locationPresenter.bind(this);
         locationPresenter.getLocation();
 
-        //bind the Geocoder
-        geocodePresenter = new GeocodePresenterImpl();
+        //attachListener the Geocoder
+        geocodePresenter = new GeocodePresenter();
         geocodePresenter.bind(this);
 
         //initialise the gallery adapter
@@ -164,10 +163,10 @@ public class LogSpotFragment extends Fragment implements
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public android.view.View onCreateView(LayoutInflater inflater, ViewGroup container,
+                                          Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View view = inflater.inflate(R.layout.fragment_log_spot, container, false);
+        android.view.View view = inflater.inflate(R.layout.fragment_log_spot, container, false);
 
         // Initialise Butterknife
         ButterKnife.bind(this, view);
@@ -176,7 +175,7 @@ public class LogSpotFragment extends Fragment implements
     }
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(android.view.View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
         if (trainNum != null) {
@@ -190,9 +189,9 @@ public class LogSpotFragment extends Fragment implements
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false);
         rvGallery.setLayoutManager(layoutManager);
         if (rvGallery.getAdapter().getItemCount() > 0) {
-            rvGallery.setVisibility(View.VISIBLE);
+            rvGallery.setVisibility(android.view.View.VISIBLE);
         } else {
-            rvGallery.setVisibility(View.GONE);
+            rvGallery.setVisibility(android.view.View.GONE);
         }
 
         FragmentManager fragmentManager = getChildFragmentManager();
@@ -386,7 +385,7 @@ public class LogSpotFragment extends Fragment implements
         adapter.notifyItemRangeChanged(0, adapter.getItemCount());
         adapter.notifyDataSetChanged();
         // Save the filename to our list
-        rvGallery.setVisibility(View.VISIBLE);
+        rvGallery.setVisibility(android.view.View.VISIBLE);
         imageList.add(imageFilename);
     }
 

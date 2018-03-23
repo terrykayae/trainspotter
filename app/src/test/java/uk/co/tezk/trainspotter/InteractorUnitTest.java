@@ -9,13 +9,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import rx.Observable;
-import uk.co.tezk.trainspotter.interactor.ITrainSpotterInteractor;
+import uk.co.tezk.trainspotter.interactor.TrainSpotterInteractor;
 import uk.co.tezk.trainspotter.interactor.TrainSpotterInteractorImpl;
 import uk.co.tezk.trainspotter.model.ClassNumbers;
 import uk.co.tezk.trainspotter.model.SightingDetails;
 import uk.co.tezk.trainspotter.model.TrainDetail;
 import uk.co.tezk.trainspotter.model.TrainListItem;
-import uk.co.tezk.trainspotter.network.ITrainSpottingRetrofit;
+import uk.co.tezk.trainspotter.network.TrainSpottingRetrofit;
 
 import static junit.framework.Assert.assertEquals;
 import static org.mockito.Mockito.times;
@@ -31,13 +31,14 @@ public class InteractorUnitTest {
     @Mock Observable<ClassNumbers> classTestResult;
     @Mock Observable<List<TrainListItem>> trainTestResult;
     @Mock Observable<TrainDetail> trainDetailResult;
-    @Mock ITrainSpottingRetrofit retrofit;
+    @Mock
+    TrainSpottingRetrofit retrofit;
 
     ClassNumbers listOfClasses;
     List<TrainListItem> trainList;
     TrainDetail trainDetail;
 
-    ITrainSpotterInteractor interactor;
+    TrainSpotterInteractor interactor;
 
     @Before
     public void setUp() throws Exception {

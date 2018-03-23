@@ -33,31 +33,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.inject.Inject;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import uk.co.tezk.trainspotter.R;
-import uk.co.tezk.trainspotter.utility.Utilitity;
+import uk.co.tezk.trainspotter.TrainSpotterApplication;
 import uk.co.tezk.trainspotter.adapters.GalleryRecyclerViewAdapter;
-import uk.co.tezk.trainspotter.interfaces.TrainspotterDialogSupport;
+import uk.co.tezk.trainspotter.base.TrainspotterDialogSupport;
 import uk.co.tezk.trainspotter.model.Constant;
 import uk.co.tezk.trainspotter.model.SightingDetails;
 import uk.co.tezk.trainspotter.model.TrainDetail;
 import uk.co.tezk.trainspotter.model.TrainListItem;
 import uk.co.tezk.trainspotter.model.parcel.MapViewParcelable;
 import uk.co.tezk.trainspotter.model.parcel.TrainParcel;
-import uk.co.tezk.trainspotter.presenter.ITrainDetailPresenter;
-import uk.co.tezk.trainspotter.presenter.TrainDetailPresenterImpl;
+import uk.co.tezk.trainspotter.presenter.TrainDetailContract;
+import uk.co.tezk.trainspotter.utility.Utilitity;
 
 import static uk.co.tezk.trainspotter.model.Constant.MAP_VIEW_PARCELABLE_KEY;
 import static uk.co.tezk.trainspotter.model.Constant.MY_PERMISSIONS_REQUEST_LOCATION_FROM_DETAILS;
 
-/**
- * A simple {@link Fragment} subclass.
- */
-
 public class TrainDetailFragment extends Fragment implements
         OnMapReadyCallback,
-        ITrainDetailPresenter.IView,
+        TrainDetailContract.View,
         GalleryRecyclerViewAdapter.OnImageClickListener {
     Context context;
 
@@ -65,15 +63,24 @@ public class TrainDetailFragment extends Fragment implements
     private TrainspotterDialogSupport trainspotterDialog;
 
     // Textview fields
-    @BindView(R.id.tvClass) TextView tvClass;
-    @BindView(R.id.tvTrainNumber) TextView tvTrainNumber;
-    @BindView(R.id.tvTrainName) TextView tvTrainName;
-    @BindView(R.id.tvTrainLivery) TextView tvTrainLivery;
-    @BindView(R.id.tvTrainOperator) TextView tvTrainOperator;
-    @BindView(R.id.tvTrainDepot) TextView tvTrainDepot;
-    @BindView(R.id.tvTrainLastSpotted) TextView tvTrainLastSpotted;
-    @BindView(R.id.tvTrainWhere) TextView tvTrainWhere;
-    @BindView(R.id.rvGallery) RecyclerView rvGallery;
+    @BindView(R.id.tvClass)
+    TextView tvClass;
+    @BindView(R.id.tvTrainNumber)
+    TextView tvTrainNumber;
+    @BindView(R.id.tvTrainName)
+    TextView tvTrainName;
+    @BindView(R.id.tvTrainLivery)
+    TextView tvTrainLivery;
+    @BindView(R.id.tvTrainOperator)
+    TextView tvTrainOperator;
+    @BindView(R.id.tvTrainDepot)
+    TextView tvTrainDepot;
+    @BindView(R.id.tvTrainLastSpotted)
+    TextView tvTrainLastSpotted;
+    @BindView(R.id.tvTrainWhere)
+    TextView tvTrainWhere;
+    @BindView(R.id.rvGallery)
+    RecyclerView rvGallery;
     // Holders for the map and associated items
     Map<String, Marker> markers;
     SupportMapFragment mSupportMapFragment;
@@ -84,22 +91,29 @@ public class TrainDetailFragment extends Fragment implements
     public boolean forcePortrait = false;
     // Holder for a fileName that can be set efore createView to show an inital image in the gallery
     private String imageFilename;
-    public void setImageFilename(String filename) { imageFilename = filename; }
+
+    public void setImageFilename(String filename) {
+        imageFilename = filename;
+    }
 
     // Include getter for GoogleMap so mainActivity can enable location
     public GoogleMap getGoogleMap() {
         return mGoogleMap;
     }
+
     // Holder for current train
     private TrainDetail currentTrain;
     // filenames for the images
-    private List<String>imageList;
+    private List<String> imageList;
+
     // Include getter so Activity can see what we're showing
     public TrainDetail getCurrentTrain() {
         return currentTrain;
     }
+
     //Our presenter
-    ITrainDetailPresenter.IPresenter presenter;
+    @Inject
+    TrainDetailContract.Presenter presenter;
 
     //Holders for settings that might be passed in that will be needed later
     MapViewParcelable mapSettings;
@@ -108,17 +122,6 @@ public class TrainDetailFragment extends Fragment implements
 
     // Adapter for the gallery of images
     GalleryRecyclerViewAdapter galleryRecyclerViewAdapter;
-
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     */
-    public interface OnTrainDetailFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onAddSightingForTrain(String classNum, String trainNum);
-    }
 
     private OnTrainDetailFragmentInteractionListener mListener;
 
@@ -163,6 +166,8 @@ public class TrainDetailFragment extends Fragment implements
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        TrainSpotterApplication.getApplication().getPresenterComponent().inject(this);
+
         if (savedInstanceState != null) {
             String classNum = savedInstanceState.getString(Constant.CLASS_NUM_KEY);
             String trainNum = savedInstanceState.getString(Constant.TRAIN_NUM_KEY);
@@ -170,11 +175,11 @@ public class TrainDetailFragment extends Fragment implements
                 setShowDetailsForTrain(classNum, trainNum);
             }
         }
-        //initialise the gallery adapter
+
         //if (galleryRecyclerViewAdapter == null)
-        List <String> images = new ArrayList();
-        Log.i("LSF", "onCreate, imageFilename = "+imageFilename);
-        if (imageFilename!=null)
+        List<String> images = new ArrayList();
+        Log.i("LSF", "onCreate, imageFilename = " + imageFilename);
+        if (imageFilename != null)
             images.add(imageFilename);
         galleryRecyclerViewAdapter = new GalleryRecyclerViewAdapter(images, getContext(), this, false);
         imageList = images;
@@ -184,11 +189,10 @@ public class TrainDetailFragment extends Fragment implements
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        int layoutId = forcePortrait?R.layout.fragment_train_detail_subfragment:R.layout.fragment_train_detail;
-        View view = inflater.inflate(layoutId, container, false);
+        int layoutId = forcePortrait ? R.layout.fragment_train_detail_subfragment : R.layout.fragment_train_detail;
+        android.view.View view = inflater.inflate(layoutId, container, false);
         // Butter knife bindings
         ButterKnife.bind(this, view);
-        presenter = new TrainDetailPresenterImpl();
         presenter.bind(this);
         return view;
     }
@@ -206,16 +210,12 @@ public class TrainDetailFragment extends Fragment implements
 
     public void fetchTrainData() {
         // Trigger call to the presenter to fetch the details of the train
-        if (presenter == null) {
-            presenter = new TrainDetailPresenterImpl();
-            presenter.bind(this);
-        }
         if (currentTrain != null)
             presenter.retrieveData(currentTrain.getTrain().getClass_(), currentTrain.getTrain().getNumber());
     }
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(android.view.View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
         fetchTrainData();
@@ -227,7 +227,7 @@ public class TrainDetailFragment extends Fragment implements
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false);
         rvGallery.setLayoutManager(layoutManager);
         // Load the map
-       // FragmentManager fragmentManager = ((MainActivity) context).getSupportFragmentManager();
+        // FragmentManager fragmentManager = ((MainActivity) context).getSupportFragmentManager();
         FragmentManager fragmentManager = getChildFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         transaction.add(R.id.mapHolder, mSupportMapFragment);
@@ -259,7 +259,7 @@ public class TrainDetailFragment extends Fragment implements
         super.onPause();
         // Store map settings
         // Save the map position
-        if (mGoogleMap!=null) {
+        if (mGoogleMap != null) {
             CameraPosition cameraPosition = mGoogleMap.getCameraPosition();
             mapSettings = new MapViewParcelable(
                     cameraPosition.target.latitude,
@@ -300,7 +300,7 @@ public class TrainDetailFragment extends Fragment implements
     // Called by Recyclerview when we click an image
     @Override
     public void onClick(String imageUrl) {
-        Toast.makeText(getContext(), "Show "+imageUrl, Toast.LENGTH_SHORT).show();
+        Toast.makeText(getContext(), "Show " + imageUrl, Toast.LENGTH_SHORT).show();
     }
 
     // Called when map is ready and loaded
@@ -421,11 +421,11 @@ public class TrainDetailFragment extends Fragment implements
             if (trainDetail.getImages() == null || trainDetail.getImages().size() == 0) {
                 // No images in this train - if the train list is empty, hide the gallery
                 if (imageList.size() == 0) {
-                    rvGallery.setVisibility(View.GONE);
+                    rvGallery.setVisibility(android.view.View.GONE);
                 }
             } else {
                 imageList.addAll(trainDetail.getImages());
-                rvGallery.setVisibility(View.VISIBLE);
+                rvGallery.setVisibility(android.view.View.VISIBLE);
                 rvGallery.setAdapter(new GalleryRecyclerViewAdapter(imageList, context, this, false));
             }
 
@@ -449,10 +449,10 @@ public class TrainDetailFragment extends Fragment implements
             }
         }
 
-        if (rvGallery.getAdapter().getItemCount()>0) {
-            rvGallery.setVisibility(View.VISIBLE);
+        if (rvGallery.getAdapter().getItemCount() > 0) {
+            rvGallery.setVisibility(android.view.View.VISIBLE);
         } else {
-            rvGallery.setVisibility(View.GONE);
+            rvGallery.setVisibility(android.view.View.GONE);
         }
 
         // If the map was already loaded, add the markers
@@ -466,23 +466,34 @@ public class TrainDetailFragment extends Fragment implements
 
     @Override
     public void onStartLoading() {
-        trainspotterDialog.startProgressDialog();
+        trainspotterDialog.showProgressDialog();
     }
 
     @Override
     public void onErrorLoading(String message) {
         trainspotterDialog.showErrorMessage(message);
-        trainspotterDialog.stopProgressDialog();
+        trainspotterDialog.hideProgressDialog();
     }
 
     @Override
     public void onCompletedLoading() {
-        trainspotterDialog.stopProgressDialog();
+        trainspotterDialog.hideProgressDialog();
     }
 
     // Called if we're showing a notification from Firebase messaging, just add the one sighting...
     public void setNotifyFor(TrainParcel trainParcel) {
         this.trainParcel = trainParcel;
         setShowDetailsForTrain(trainParcel.getTrainClass(), trainParcel.getTrainNum());
+    }
+
+    /**
+     * This interface must be implemented by activities that contain this
+     * fragment to allow an interaction in this fragment to be communicated
+     * to the activity and potentially other fragments contained in that
+     * activity.
+     */
+    public interface OnTrainDetailFragmentInteractionListener {
+        // TODO: Update argument type and name
+        void onAddSightingForTrain(String classNum, String trainNum);
     }
 }

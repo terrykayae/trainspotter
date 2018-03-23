@@ -10,11 +10,11 @@ import java.util.List;
 
 import rx.Observable;
 import rx.schedulers.Schedulers;
-import uk.co.tezk.trainspotter.interactor.ITrainSpotterInteractor;
+import uk.co.tezk.trainspotter.interactor.TrainSpotterInteractor;
 import uk.co.tezk.trainspotter.model.SightingDetails;
 import uk.co.tezk.trainspotter.model.TrainDetail;
 import uk.co.tezk.trainspotter.model.TrainListItem;
-import uk.co.tezk.trainspotter.presenter.ITrainDetailPresenter;
+import uk.co.tezk.trainspotter.presenter.TrainDetailContract;
 import uk.co.tezk.trainspotter.presenter.TrainDetailPresenterImpl;
 
 import static org.mockito.Mockito.times;
@@ -27,12 +27,12 @@ import static org.mockito.Mockito.when;
 
 public class TrainDetailPresenterTest {
     // The presenter under test
-    ITrainDetailPresenter.IPresenter presenter;
+    TrainDetailContract.Presenter presenter;
     // The mocked items
     @Mock
-    ITrainDetailPresenter.IView view;
+    TrainDetailContract.View view;
     @Mock
-    ITrainSpotterInteractor interactor;
+    TrainSpotterInteractor interactor;
     // Test data
     private TrainListItem trainListItem;
     private TrainDetail trainDetail;

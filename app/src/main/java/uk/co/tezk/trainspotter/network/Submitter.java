@@ -22,7 +22,7 @@ import static uk.co.tezk.trainspotter.model.Constant.SUCCESS_MESSAGE;
 public class Submitter {
     private static Submitter submitter;
     @Inject
-    static ITrainSpottingRetrofit trainSpottingApi;
+    static TrainSpottingRetrofit trainSpottingApi;
 
     private Submitter() {
         TrainSpotterApplication.getApplication().getNetworkComponent().inject(this);

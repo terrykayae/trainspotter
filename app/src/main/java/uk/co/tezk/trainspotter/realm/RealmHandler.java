@@ -31,7 +31,6 @@ public class RealmHandler {
     }
 
     public static RealmHandler getInstance() {
-        Log.i("RH", "getting instance, rh currently "+realmHandler);
         if (realmHandler == null) {
             realmHandler = new RealmHandler();
         }
@@ -44,11 +43,9 @@ public class RealmHandler {
         Realm realm = Realm.getDefaultInstance();
         if (sightingDetails.getTrainClass() == null || sightingDetails.getTrainClass().length() == 0 ||
                 "0".equals(sightingDetails.getTrainClass())) {
-            Log.i("RH", "sightingdetails.trainclass == null");
             RealmResults<TrainListItem> results = realm.where(TrainListItem.class)
                     .equalTo("number", sightingDetails.getTrainId())
                     .findAll();
-            Log.i("RH", "results = "+results);
             if (results.size()>0) {
                 Log.i("RH", "class is "+results.get(0).getClass_());
             } else {

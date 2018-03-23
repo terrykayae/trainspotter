@@ -6,37 +6,28 @@ package uk.co.tezk.trainspotter.model;
 
 public class Constant {
     public enum CURRENT_ACTION {
-        INITIALISING, CLASS_LIST, LOG_SPOT, TRAIN_DETAIL, TRAIN_LIST, INVALID;
+        INITIALISING, CLASS_LIST, LOG_SPOT, TRAIN_DETAIL, TRAIN_LIST, HISTORY, INVALID;
 
         public static CURRENT_ACTION fromInteger(int i) {
             switch (i) {
-                case 1 :
+                case 0 :
                     return INITIALISING;
-                case 2 :
+                case 1 :
                     return CLASS_LIST;
-                case 3 :
+                case 2 :
                     return LOG_SPOT;
-                case 4 :
+                case 3 :
                     return TRAIN_DETAIL;
-                case 5 :
+                case 4 :
                     return TRAIN_LIST;
+                case 5 :
+                    return HISTORY;
             }
             return INVALID;
         }
+
         public static int toInteger(CURRENT_ACTION c) {
-            switch (c) {
-                case INITIALISING:
-                    return 1;
-                case CLASS_LIST:
-                    return 2;
-                case LOG_SPOT:
-                    return 3;
-                case TRAIN_DETAIL:
-                    return 4;
-                case TRAIN_LIST:
-                    return 5;
-            }
-            return 0;
+            return c.ordinal();
         }
     };
     public static final String API_KEY = "gavffvfavaawjihwj0";

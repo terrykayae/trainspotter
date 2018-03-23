@@ -7,8 +7,7 @@ import uk.co.tezk.trainspotter.model.ClassNumbers;
 import uk.co.tezk.trainspotter.model.SightingDetails;
 import uk.co.tezk.trainspotter.model.TrainDetail;
 import uk.co.tezk.trainspotter.model.TrainListItem;
-import uk.co.tezk.trainspotter.network.ITrainSpottingRetrofit;
-import uk.co.tezk.trainspotter.realm.ApiCache;
+import uk.co.tezk.trainspotter.network.TrainSpottingRetrofit;
 
 import static uk.co.tezk.trainspotter.utility.Utilitity.isNetworkAvailable;
 
@@ -17,56 +16,51 @@ import static uk.co.tezk.trainspotter.utility.Utilitity.isNetworkAvailable;
  * to allow caching
  */
 
-public class TrainSpotterInteractorImpl implements ITrainSpotterInteractor {
+public class TrainSpotterInteractorImpl implements TrainSpotterInteractor {
 
-    ITrainSpottingRetrofit retrofit;
-
-    // for testing
-    boolean mockNetworkTest = false;
+    TrainSpottingRetrofit retrofit;
 
     // Default constructor
      private TrainSpotterInteractorImpl() {
         //TrainSpotterApplication.getApplication().getNetworkComponent().inject(this);
     }
 
-    public TrainSpotterInteractorImpl(ITrainSpottingRetrofit retrofit, boolean passNetworkTest) {
+    public TrainSpotterInteractorImpl(TrainSpottingRetrofit retrofit) {
         this.retrofit = retrofit;
-        this.mockNetworkTest = passNetworkTest;
     }
 
     @Override
     public Observable<ClassNumbers> getClassNumbers() {
-        if (!mockNetworkTest && !isNetworkAvailable())
+        if (!isNetworkAvailable())
             return Observable.empty();
         // Fetch then cache the numbers
         Observable<ClassNumbers> classNumbers = retrofit.getClassNumbers();
-        if (!mockNetworkTest)
-            ApiCache.getInstance().cacheClassList(classNumbers);
-       // ApiCache.getInstance().unsubscribe();
+       // if (!mockNetworkTest)
+       //     CachedInteractor.getInstance().cacheClassList(classNumbers);
+       // CachedInteractor.getInstance().unsubscribe();
         return classNumbers;
     }
 
     @Override
     public Observable<List<TrainListItem>> getTrains(String classNumber) {
-        if (!mockNetworkTest && !isNetworkAvailable())
+        if (!isNetworkAvailable())
             return Observable.empty();
         Observable<List<TrainListItem>> trains = retrofit.getTrains(classNumber);
-        if (!mockNetworkTest)
-            ApiCache.getInstance().cacheTrainList(trains);
-      //  ApiCache.getInstance().unsubscribe();
+     //   if (!mockNetworkTest)
+     //       CachedInteractor.getInstance().cacheTrainList(trains);
+      //  CachedInteractor.getInstance().unsubscribe();
         return trains;
     }
 
     @Override
     public Observable<TrainDetail> getTrainDetails(String classId, String trainId) {
-        if (!mockNetworkTest && !isNetworkAvailable())
+        if (!isNetworkAvailable())
             return Observable.empty();
         return retrofit.getTrainDetails(classId, trainId);
     }
 
     @Override
     public void addTrainSighting(SightingDetails sightingDetails, String apiKey) {
-        if (!mockNetworkTest)
             if (!isNetworkAvailable())
                 return;
         retrofit.addTrainSighting(

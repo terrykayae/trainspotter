@@ -10,7 +10,7 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
 
 import uk.co.tezk.trainspotter.TrainSpotterApplication;
-import uk.co.tezk.trainspotter.presenter.ILocationUpdatePresenter;
+import uk.co.tezk.trainspotter.presenter.LocationUpdateContract;
 
 
 /**
@@ -19,9 +19,9 @@ import uk.co.tezk.trainspotter.presenter.ILocationUpdatePresenter;
 
 public class MyLocation implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
-        ILocationUpdatePresenter.IPresenter {
+        LocationUpdateContract.Presenter {
 
-    ILocationUpdatePresenter.IView iView;
+    LocationUpdateContract.View iView;
     protected GoogleApiClient mGoogleApiClient;
     protected Location mLastLocation;
 
@@ -80,7 +80,7 @@ public class MyLocation implements GoogleApiClient.ConnectionCallbacks,
     }
 
     @Override
-    public void bind(ILocationUpdatePresenter.IView view) {
+    public void bind(LocationUpdateContract.View view) {
         this.iView = view;
     }
 

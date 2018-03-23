@@ -7,7 +7,7 @@ import javax.inject.Inject;
 
 import rx.Observable;
 import uk.co.tezk.trainspotter.model.ClassNumbers;
-import uk.co.tezk.trainspotter.network.ITrainSpottingRetrofit;
+import uk.co.tezk.trainspotter.network.TrainSpottingRetrofit;
 import uk.co.tezk.trainspotter.injection.NetworkModule;
 
 import static junit.framework.Assert.assertNotNull;
@@ -18,7 +18,7 @@ import static junit.framework.Assert.assertNotNull;
 
 public class ApiUnitTest {
     @Inject
-    ITrainSpottingRetrofit api;
+    TrainSpottingRetrofit api;
 
     @Before
     public void setUp() throws Exception {

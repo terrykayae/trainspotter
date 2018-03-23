@@ -143,8 +143,6 @@ public class Utilitity {
         int classes [][][]={Constant.DIESEL,Constant.ELECTRIC, Constant.DMU, Constant.EMU, Constant.DEMU};
         String classNames [] = {Constant.DIESEL_TITLE, Constant.ELECTRIC_TITLE, Constant.DMU_TITLE, Constant.EMU_TITLE, Constant.DEMU_TITLE};
 
-        Log.i("Utility", "GetClassName for "+number);
-
         String name = "Steam";
         for (int c = 0; c< classes.length; c++) {
             for (int l = 0; l<classes[c].length; l++) {

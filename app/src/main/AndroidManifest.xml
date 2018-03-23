@@ -40,10 +40,7 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <meta-data
-                android:name="android.app.searchable"
-                android:resource="@xml/searchable">
-            </meta-data>
+
         </activity>
         <!--
              The API key for Google Maps-based APIs is defined as a string resource.
@@ -64,13 +61,8 @@
             android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths"></meta-data>
+                android:resource="@xml/file_paths" />
         </provider>
-
-        <provider
-            android:authorities="uk.co.tezk.trainspotter.provider"
-            android:name=".content_provider.TrainContentProvider"
-            android:exported="true"/>
 
         <!--
      Set custom default icon. This is used when no icon is set for incoming notification messages.
@@ -90,11 +82,13 @@
         <activity
             android:name=".LogSpotActivity"
             android:label="@string/log_spot_title"
-            android:parentActivityName=".MainActivity"
-            >
+            android:parentActivityName=".MainActivity"></activity>
 
-        </activity>
-        <meta-data android:name="com.google.android.backup.api_key" android:value="AEdPqrEAAAAI2a79Ej6RpqqRjkOZsWisH8si6s8DLMKZ24mhyw" />
+        <meta-data
+            android:name="com.google.android.backup.api_key"
+            android:value="AEdPqrEAAAAI2a79Ej6RpqqRjkOZsWisH8si6s8DLMKZ24mhyw" />
+
+        <activity android:name=".HistoryActivity"></activity>
     </application>
 
 </manifest>

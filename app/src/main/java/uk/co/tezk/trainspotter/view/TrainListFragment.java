@@ -10,24 +10,23 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
+
+import javax.inject.Inject;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import uk.co.tezk.trainspotter.R;
+import uk.co.tezk.trainspotter.TrainSpotterApplication;
 import uk.co.tezk.trainspotter.adapters.TrainListRecyclerViewAdapter;
-import uk.co.tezk.trainspotter.interfaces.TrainspotterDialogSupport;
+import uk.co.tezk.trainspotter.base.TrainspotterDialogSupport;
 import uk.co.tezk.trainspotter.model.Constant;
 import uk.co.tezk.trainspotter.model.TrainDetail;
 import uk.co.tezk.trainspotter.model.TrainListItem;
-import uk.co.tezk.trainspotter.presenter.ITrainListPresenter;
-import uk.co.tezk.trainspotter.presenter.TrainListPresenterImpl;
+import uk.co.tezk.trainspotter.presenter.TrainListContract;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -36,32 +35,22 @@ import uk.co.tezk.trainspotter.presenter.TrainListPresenterImpl;
  * to handle interaction events.
  */
 public class TrainListFragment extends Fragment implements
-        ITrainListPresenter.IView,
+        TrainListContract.View,
         TrainListRecyclerViewAdapter.OnTrainListItemClickListener {
 
-    private ITrainListPresenter.IPresenter presenter;
+    @Inject
+    public TrainListContract.Presenter presenter;
 
     private OnTrainListFragmentInteractionListener mListener;
 
     // Holder to access progressDialog in MainActivity
     private TrainspotterDialogSupport progressDialog;
 
-    List <TrainListItem> mTrainList;
+    List<TrainListItem> mTrainList;
     private String showTrainsForClass;
 
-    @BindView(R.id.trainListRecyclerView) RecyclerView trainListRecyclerView;
-
-    public String getShowTrainsForClass() {
-        return showTrainsForClass;
-    }
-
-    public void setShowTrainsForClass(String showTrainsForClass) {
-        if (showTrainsForClass!=null)
-            this.showTrainsForClass = showTrainsForClass;
-        else
-            this.showTrainsForClass = "1";
-        Log.i("TLF", "Setting class to "+showTrainsForClass);
-    }
+    @BindView(R.id.trainListRecyclerView)
+    RecyclerView trainListRecyclerView;
 
     public TrainListFragment() {
         // Required empty public constructor
@@ -78,32 +67,37 @@ public class TrainListFragment extends Fragment implements
                     + " must implement OnTrainListFragmentInteractionListener");
         }
         if (context instanceof TrainspotterDialogSupport)
-            progressDialog = (TrainspotterDialogSupport)context;
+            progressDialog = (TrainspotterDialogSupport) context;
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         // bug on later APIs
         super.onCreate(savedInstanceState);
-        if (savedInstanceState!=null && savedInstanceState.getString(Constant.CLASS_NUM_KEY)!=null) {
-            setShowTrainsForClass(savedInstanceState.getString(Constant.CLASS_NUM_KEY));
+
+        TrainSpotterApplication.getApplication().getPresenterComponent().inject(this);
+        presenter.bind(this);
+
+        showTrainsForClass = getArguments().getString(TRAIN_CLASS);
+
+        if (showTrainsForClass == null && savedInstanceState.getString(Constant.CLASS_NUM_KEY) != null) {
+            showTrainsForClass = savedInstanceState.getString(Constant.CLASS_NUM_KEY);
+        } else {
+            showTrainsForClass = "1";
         }
+
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        presenter = new TrainListPresenterImpl();
-        presenter.bind(this);
-
-
-       // Inflate the layout for this fragment
+    public android.view.View onCreateView(LayoutInflater inflater, ViewGroup container,
+                                          Bundle savedInstanceState) {
+        // Inflate the layout for this fragment
         int layout = R.layout.fragment_train_list;
         return inflater.inflate(layout, container, false);
     }
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(android.view.View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         // Initialise Butterknife anotations
         ButterKnife.bind(this, view);
@@ -126,8 +120,8 @@ public class TrainListFragment extends Fragment implements
         super.onViewStateRestored(savedInstanceState);
 
         //restore the class we were viewing
-        if (savedInstanceState!=null && savedInstanceState.getString(Constant.CLASS_NUM_KEY)!=null) {
-            setShowTrainsForClass(savedInstanceState.getString(Constant.CLASS_NUM_KEY));
+        if (savedInstanceState != null && savedInstanceState.getString(Constant.CLASS_NUM_KEY) != null) {
+            showTrainsForClass =savedInstanceState.getString(Constant.CLASS_NUM_KEY);
             reloadTrainList();
         }
     }
@@ -139,13 +133,9 @@ public class TrainListFragment extends Fragment implements
     }
 
     public void reloadTrainList() {
-        if (mTrainList.size()==0) {
-            if (showTrainsForClass==null || showTrainsForClass.equals("0")) {
+        if (mTrainList.size() == 0) {
+            if (showTrainsForClass == null || showTrainsForClass.equals("0")) {
                 return;
-            }
-            if (presenter == null) {
-                presenter = new TrainListPresenterImpl();
-                presenter.bind(this);
             }
             presenter.retrieveData(showTrainsForClass);
         }
@@ -161,39 +151,36 @@ public class TrainListFragment extends Fragment implements
     }
 
     public void searchFor(String searchString) {
-        if (presenter == null) {
-            presenter = new TrainListPresenterImpl();
-            presenter.bind(this);
-        }
         presenter.performSearch(searchString);
     }
 
     @Override
     public void showTrainList(List<TrainDetail> trainList) {
-        Collections.sort(trainList, new Comparator<TrainDetail>() {
-            @Override
-            public int compare(TrainDetail o1, TrainDetail o2) {
-                return o1.getTrain().getNumber().compareTo(o2.getTrain().getNumber());
-            }
-        });
+        // TODO: Fix sort
+        //     Collections.sort(trainList, new Comparator<TrainDetail>() {
+        //         @Override
+        //        public int compare(TrainDetail o1, TrainDetail o2) {
+        //             return o1.getTrain().getNumber().compareTo(o2.getTrain().getNumber());
+        //         }
+        //  });
         trainListRecyclerView.setAdapter(new TrainListRecyclerViewAdapter(trainList, this, getContext()));
     }
 
     @Override
     public void onStartLoading() {
-        progressDialog.startProgressDialog();
+        progressDialog.showProgressDialog();
     }
 
     @Override
     public void onErrorLoading(String message) {
 //        Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
-  //      progressDialog.stopProgressDialog();
-        Log.i("TLF", "onErrorLoading = "+message);
+        //      progressDialog.hideProgressDialog();
+        Log.i("TLF", "onErrorLoading = " + message);
     }
 
     @Override
     public void onCompletedLoading() {
-        progressDialog.stopProgressDialog();
+        progressDialog.hideProgressDialog();
     }
 
     @Override
@@ -202,13 +189,17 @@ public class TrainListFragment extends Fragment implements
         mListener.onShowTrainDetails(classId, trainNum);
     }
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     */
     public interface OnTrainListFragmentInteractionListener {
-        void onShowTrainDetails(String classNum, String trainNum) ;
+        void onShowTrainDetails(String classNum, String trainNum);
     }
+
+    public static TrainListFragment getInstance(String trainClass) {
+        TrainListFragment fragment = new TrainListFragment();
+        Bundle bundle = new Bundle();
+        bundle.putString(TRAIN_CLASS, trainClass);
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
+    private static final String TRAIN_CLASS = "trainclass";
 }
